@@ -92,16 +92,20 @@ namespace Kartographer
 			}
 		}
 
+
+		public void Awake() {
+			if (_instance)
+				Destroy (_instance);
+			_instance = this;
+		}
+
 		/// <summary>
 		/// Start this instance.
 		/// </summary>
 		public void Start()
 		{
-			if (_instance)
-				Destroy (_instance);
-			_instance = this;
 			_winID = GUIUtility.GetControlID (FocusType.Passive);
-			Debug.Log ("Vessel Select Start");
+//			Debug.Log ("Vessel Select Start");
 			PluginConfiguration config = PluginConfiguration.CreateForType<KartographSettings> ();
 			config.load ();
 			_windowPos = config.GetValue<Rect> ("VesselWindowPos",new Rect());
@@ -112,6 +116,7 @@ namespace Kartographer
 			_krakenWarn = config.GetValue<bool> ("KrakenWarn",false);
 
 			GameEvents.onVesselDestroy.Add (VesselDestroyed);
+			InitStyles ();
 		}
 
 		/// <summary>
@@ -119,7 +124,7 @@ namespace Kartographer
 		/// </summary>
 		public void OnDestroy()
 		{
-			RenderingManager.RemoveFromPostDrawQueue (0, OnDraw);
+//			RenderingManager.RemoveFromPostDrawQueue (0, OnDraw);
 			PluginConfiguration config = PluginConfiguration.CreateForType<KartographSettings> ();
 			config.load ();
 			config.SetValue ("VesselWindowPos",_windowPos);
@@ -132,6 +137,17 @@ namespace Kartographer
 				_instance = null;
 		}
 
+		public void OnGUI()
+		{
+			if (_active) {
+				_windowPos = GUILayout.Window (_winID, _windowPos, OnWindow, "Vessel Select", _windowStyle);
+				if (_windowPos.x == 0.0f && _windowPos.y == 0.0f) {
+					_windowPos.y = Screen.height * 0.5f - Math.Max(_windowPos.height * 0.5f,150.0f);
+					_windowPos.x = Screen.width * 0.5f - _windowPos.width * 0.5f;
+				}
+			}
+		}
+
 		/// <summary>
 		/// Toggles window visibility.
 		/// </summary>
@@ -139,9 +155,9 @@ namespace Kartographer
 		{
 			_active = !_active;
 			if (_active) {
-				RenderingManager.AddToPostDrawQueue (0, OnDraw);
+//				RenderingManager.AddToPostDrawQueue (0, OnDraw);
 			} else {
-				RenderingManager.RemoveFromPostDrawQueue (0, OnDraw);
+//				RenderingManager.RemoveFromPostDrawQueue (0, OnDraw);
 			}
 		}
 
@@ -198,21 +214,6 @@ namespace Kartographer
 
 				if (_krakenSacrifice.parts.Count == 0) {
 					_krakenSacrifice = null;
-				}
-			}
-		}
-
-		/// <summary>
-		/// Callback when a draw is requested.
-		/// </summary>
-		private void OnDraw()
-		{
-			InitStyles ();
-			if (_active) {
-				_windowPos = GUILayout.Window (_winID, _windowPos, OnWindow, "Vessel Select", _windowStyle);
-				if (_windowPos.x == 0.0f && _windowPos.y == 0.0f) {
-					_windowPos.y = Screen.height * 0.5f - Math.Max(_windowPos.height * 0.5f,150.0f);
-					_windowPos.x = Screen.width * 0.5f - _windowPos.width * 0.5f;
 				}
 			}
 		}
@@ -307,7 +308,7 @@ namespace Kartographer
 		/// <summary>
 		/// Initializes the styles.
 		/// </summary>
-		private void InitStyles()
+		public void InitStyles()
 		{
 			_windowStyle 	= KartographStyle.Instance.Window;
 			_labelStyle 	= KartographStyle.Instance.Label;

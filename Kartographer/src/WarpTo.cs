@@ -25,10 +25,10 @@ namespace Kartographer
 		private GUIStyle 	_windowStyle;
 		private GUIStyle 	_labelStyle;
 		private GUIStyle 	_totalLabelStyle;
-		private GUIStyle 	_centeredLabelStyle;
-		private GUIStyle 	_rightLabelStyle;
+//		private GUIStyle 	_centeredLabelStyle;
+//		private GUIStyle 	_rightLabelStyle;
 		private GUIStyle	_buttonStyle;
-		private GUIStyle	_scrollStyle;
+//		private GUIStyle	_scrollStyle;
 		private int 		_winID;
 		private double 		_UT;
 		private double 		_WarpEndUT = 0.0d;
@@ -37,15 +37,23 @@ namespace Kartographer
 		private bool		_refreshHeight = false;
 
 		/// <summary>
+		/// Awake this instance.
+		/// </summary>
+		public void Awake() {
+			if (_instance)
+				Destroy (_instance);
+			_instance = this;
+		}
+
+		/// <summary>
 		/// Start this instance.
 		/// </summary>
 		public void Start()
 		{
-			if (_instance)
-				Destroy (_instance);
-			_instance = this;
 			_winID = GUIUtility.GetControlID (FocusType.Passive);
 			_UT = Planetarium.GetUniversalTime ();
+
+			InitStyles ();
 		}
 
 		/// <summary>
@@ -53,10 +61,31 @@ namespace Kartographer
 		/// </summary>
 		public void OnDestroy()
 		{
-			RenderingManager.RemoveFromPostDrawQueue (0, OnDraw);
+//			RenderingManager.RemoveFromPostDrawQueue (0, OnDraw);
 			ControlUnlock ();
 			if (_instance == this)
 				_instance = null;
+		}
+
+		public void OnGUI()
+		{
+			if (_active)
+			{
+				if (_refreshHeight) {
+					_refreshHeight = false;
+					_windowPos.height = 0.0f;
+				}
+				_windowPos = GUILayout.Window (_winID, _windowPos, OnWindow, "Warp To",_windowStyle);
+				if (_windowPos.x == 0.0f && _windowPos.y == 0.0f) {
+					_windowPos.y = Screen.height * 0.5f - _windowPos.height * 0.5f;
+					_windowPos.x = Screen.width - _windowPos.width - 50.0f;
+				}
+				if (_windowPos.Contains (Event.current.mousePosition)) {
+					ControlLock ();
+				} else {
+					ControlUnlock();
+				}
+			}
 		}
 
 		/// <summary>
@@ -67,9 +96,7 @@ namespace Kartographer
 			_active = !_active;
 			if (_active) {
 				_refreshHeight = true;
-				RenderingManager.AddToPostDrawQueue (0, OnDraw);
 			} else {
-				RenderingManager.RemoveFromPostDrawQueue (0, OnDraw);
 				Invoke ("ControlUnlock", 1);
 			}
 		}
@@ -98,35 +125,13 @@ namespace Kartographer
 			// Workaround to ensure we stop warping when we should.
 			if (_WarpEndUT > 0.0d && Planetarium.GetUniversalTime () > _WarpEndUT+1.0d &&
 				TimeWarp.CurrentRateIndex > 0) {
-				Debug.Log ("Warp fix");
+//				Debug.Log ("Warp fix");
 				TimeWarp.SetRate (0, true);
 				_WarpEndUT = 0.0d;
 			}
 			// If we stop the warp shut off the workaround.
 			if (TimeWarp.CurrentRateIndex == 0 && _WarpEndUT > 0.0d) {
 				_WarpEndUT = 0.0d;
-			}
-		}
-
-		/// <summary>
-		/// Drawing callback for the main window.
-		/// </summary>
-		private void OnDraw()
-		{
-			InitStyles ();
-			if (_refreshHeight) {
-				_refreshHeight = false;
-				_windowPos.height = 0.0f;
-			}
-			_windowPos = GUILayout.Window (_winID, _windowPos, OnWindow, "Warp To",_windowStyle);
-			if (_windowPos.x == 0.0f && _windowPos.y == 0.0f) {
-				_windowPos.y = Screen.height * 0.5f - _windowPos.height * 0.5f;
-				_windowPos.x = Screen.width - _windowPos.width - 50.0f;
-			}
-			if (_windowPos.Contains (Event.current.mousePosition)) {
-				ControlLock ();
-			} else {
-				ControlUnlock();
 			}
 		}
 
@@ -254,7 +259,7 @@ namespace Kartographer
 		/// <summary>
 		/// Initializes the styles.
 		/// </summary>
-		private void InitStyles()
+		public void InitStyles()
 		{
 			_windowStyle = KartographStyle.Instance.Window;
 			if (_totalLabelStyle == null || _labelStyle != KartographStyle.Instance.Label) {
@@ -262,10 +267,10 @@ namespace Kartographer
 				_totalLabelStyle.fontStyle = FontStyle.BoldAndItalic;
 			}
 			_labelStyle = KartographStyle.Instance.Label;
-			_centeredLabelStyle = KartographStyle.Instance.CenteredLabel;
-			_rightLabelStyle = KartographStyle.Instance.RightLabel;
+//			_centeredLabelStyle = KartographStyle.Instance.CenteredLabel;
+//			_rightLabelStyle = KartographStyle.Instance.RightLabel;
 			_buttonStyle = KartographStyle.Instance.Button;
-			_scrollStyle = KartographStyle.Instance.ScrollView;
+//			_scrollStyle = KartographStyle.Instance.ScrollView;
 		}
 	}
 

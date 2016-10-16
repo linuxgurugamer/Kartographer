@@ -60,7 +60,7 @@ namespace Kartographer
 		private Vector2		_scrollPos = new Vector2();
 		private GUIStyle 	_windowStyle;
 		private GUIStyle 	_labelStyle;
-		private GUIStyle 	_centeredLabelStyle;
+//		private GUIStyle 	_centeredLabelStyle;
 		private GUIStyle	_buttonStyle;
 		private GUIStyle	_scrollStyle;
 		private GUIStyle	_toggleStyle;
@@ -78,21 +78,31 @@ namespace Kartographer
 		private TimeControl _timeControl = new TimeControl();
 
 		/// <summary>
+		/// Awake this instance.
+		/// </summary>
+		public void Awake() {
+			if (_instance)
+				Destroy (_instance);
+			_instance = this;
+		}
+
+		/// <summary>
 		/// Start this instance.
 		/// </summary>
 		public void Start()
 		{
-			if (_instance)
-				Destroy (_instance);
-			_instance = this;
 			_winID = GUIUtility.GetControlID (FocusType.Passive);
 			_savedWinID = GUIUtility.GetControlID (FocusType.Passive);
-			Debug.Log ("Maneuver Editor Start");
+//			Debug.Log ("Maneuver Editor Start");
+
 			PluginConfiguration config = PluginConfiguration.CreateForType<KartographSettings> ();
 			config.load ();
+
 			_windowPos = config.GetValue<Rect> ("ManeuverWindowPos",new Rect());
 			_windowPos.width = 0.0f;
 			_windowPos.height = 0.0f;
+
+			InitStyles ();
 		}
 
 		/// <summary>
@@ -100,7 +110,7 @@ namespace Kartographer
 		/// </summary>
 		public void OnDestroy()
 		{
-			RenderingManager.RemoveFromPostDrawQueue (0, OnDraw);
+//			RenderingManager.RemoveFromPostDrawQueue (0, OnDraw);
 			PluginConfiguration config = PluginConfiguration.CreateForType<KartographSettings> ();
 			config.load ();
 			config.SetValue ("ManeuverWindowPos",_windowPos);
@@ -109,16 +119,32 @@ namespace Kartographer
 				_instance = null;
 		}
 
+		public void OnGUI()
+		{
+			if (_maneuverShow)
+			{
+				if (_maneuverShow && IsUsable()) {
+					_windowPos = GUILayout.Window (_winID, _windowPos, OnWindow, "Maneuver Editor", _windowStyle);
+					if (_windowPos.x == 0.0f && _windowPos.y == 0.0f) {
+						_windowPos.y = Screen.height * 0.5f - Math.Max(_windowPos.height * 0.5f,200.0f);
+						_windowPos.x = 50.0f;
+					}
+					if (_stored.Count > 0) {
+						_savedPos.x = _windowPos.x + _windowPos.width + 10.0f;
+						_savedPos.y = _windowPos.y;
+						_savedPos = GUILayout.Window (_savedWinID, _savedPos, SavedWindow, "Saved Maneuvers", _windowStyle);
+					}
+				}
+			}
+		}
+
 		/// <summary>
 		/// Toggles the window.
 		/// </summary>
 		public void ToggleWindow()
 		{
 			_maneuverShow = !_maneuverShow;
-			if (_maneuverShow) {
-				RenderingManager.AddToPostDrawQueue (0, OnDraw);
-			} else {
-				RenderingManager.RemoveFromPostDrawQueue (0, OnDraw);
+			if (!_maneuverShow) {
 				Invoke ("ControlUnlock", 1);
 			}
 		}
@@ -140,26 +166,6 @@ namespace Kartographer
 		public bool IsUsable()
 		{
 			return IsAllowed() && HighLogic.LoadedSceneIsFlight && MapView.MapIsEnabled;
-		}
-
-		/// <summary>
-		/// Draws the windows.
-		/// </summary>
-		public void OnDraw()
-		{
-			InitStyles ();
-			if (_maneuverShow && IsUsable()) {
-				_windowPos = GUILayout.Window (_winID, _windowPos, OnWindow, "Maneuver Editor", _windowStyle);
-				if (_windowPos.x == 0.0f && _windowPos.y == 0.0f) {
-					_windowPos.y = Screen.height * 0.5f - Math.Max(_windowPos.height * 0.5f,200.0f);
-					_windowPos.x = 50.0f;
-				}
-				if (_stored.Count > 0) {
-					_savedPos.x = _windowPos.x + _windowPos.width + 10.0f;
-					_savedPos.y = _windowPos.y;
-					_savedPos = GUILayout.Window (_savedWinID, _savedPos, SavedWindow, "Saved Maneuvers", _windowStyle);
-				}
-			}
 		}
 
 		/// <summary>
@@ -487,11 +493,11 @@ namespace Kartographer
 		/// <summary>
 		/// Initializes the styles.
 		/// </summary>
-		private void InitStyles()
+		public void InitStyles()
 		{
 			_windowStyle = KartographStyle.Instance.Window;
 			_labelStyle = KartographStyle.Instance.Label;
-			_centeredLabelStyle = KartographStyle.Instance.CenteredLabel;
+//			_centeredLabelStyle = KartographStyle.Instance.CenteredLabel;
 			_buttonStyle = KartographStyle.Instance.Button;
 			_scrollStyle = KartographStyle.Instance.ScrollView;
 			_toggleStyle = KartographStyle.Instance.Toggle;

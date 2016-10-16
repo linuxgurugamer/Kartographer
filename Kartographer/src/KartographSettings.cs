@@ -19,12 +19,12 @@ namespace Kartographer
 		static private KartographSettings _instance = null;
 		private GUIStyle 	_windowStyle;
 		private GUIStyle 	_labelStyle;
-		private GUIStyle 	_centeredLabelStyle;
-		private GUIStyle	_textFieldStyle;
-		private GUIStyle	_textAreaStyle;
+//		private GUIStyle 	_centeredLabelStyle;
+//		private GUIStyle	_textFieldStyle;
+//		private GUIStyle	_textAreaStyle;
 		private GUIStyle	_toggleStyle;
 		private GUIStyle	_buttonStyle;
-		private bool 		_hasInitStyles 	= false;
+//		private bool 		_hasInitStyles 	= false;
 		private bool		_active = false;
 		static private Rect _windowPos = new Rect();
 		private bool _autoHide = true;
@@ -36,15 +36,12 @@ namespace Kartographer
 		private int _winID = 0;
 
 		/// <summary>
-		/// Toggles the window.
+		/// Awake this instance.
 		/// </summary>
-		public void ToggleWindow()
-		{
-			_active = !_active;
-			if (_active)
-				RenderingManager.AddToPostDrawQueue (0, OnDraw);
-			else
-				RenderingManager.RemoveFromPostDrawQueue (0, OnDraw);
+		public void Awake() {
+			if (_instance)
+				Destroy (_instance);
+			_instance = this;
 		}
 
 		/// <summary>
@@ -52,10 +49,10 @@ namespace Kartographer
 		/// </summary>
 		public void Start()
 		{
-			if (_instance)
-				Destroy (_instance);
-			_instance = this;
 			_winID = GUIUtility.GetControlID (FocusType.Passive);
+
+			InitStyles ();
+
 			PluginConfiguration config = PluginConfiguration.CreateForType<KartographSettings> ();
 			config.load ();
 			_autoHide = config.GetValue<bool> ("AutoHide", true);
@@ -67,8 +64,6 @@ namespace Kartographer
 		/// </summary>
 		public void OnDestroy()
 		{
-			RenderingManager.RemoveFromPostDrawQueue (0, OnDraw);
-
 			if (_instance == this)
 				_instance = null;
 			PluginConfiguration config = PluginConfiguration.CreateForType<KartographSettings> ();
@@ -78,13 +73,8 @@ namespace Kartographer
 			config.save ();
 		}
 
-		/// <summary>
-		/// Draw the window.
-		/// </summary>
-		public void OnDraw()
+		public void OnGUI()
 		{
-			if (!_hasInitStyles)
-				InitStyles ();
 			if (_active) {
 				_windowPos = GUILayout.Window (_winID, _windowPos, OnWindow, "Settings", _windowStyle);
 				if (_windowPos.x == 0.0f && _windowPos.y == 0.0f) {
@@ -95,6 +85,14 @@ namespace Kartographer
 		}
 
 		/// <summary>
+		/// Toggles the window.
+		/// </summary>
+		public void ToggleWindow()
+		{
+			_active = !_active;
+		}
+
+		/// <summary>
 		/// Draw the main window.
 		/// </summary>
 		/// <param name="windowId">Window identifier.</param>
@@ -102,17 +100,16 @@ namespace Kartographer
 		{
 			GUILayout.BeginVertical (GUILayout.MinWidth(300.0f));
 			GUILayout.Label ("Plugin:" + typeof(KartographSettings).Assembly.GetName ().Name, _labelStyle);
-			GUILayout.Label ("Version:"+ Util.VERSION, _labelStyle);
-			GUILayout.Label ("Build: "+ typeof(KartographSettings).Assembly.GetName ().Version, _labelStyle);
+//			GUILayout.Label ("Version:"+ Util.VERSION, _labelStyle);
+			GUILayout.Label ("Version: "+ typeof(KartographSettings).Assembly.GetName ().Version, _labelStyle);
 			_autoHide = GUILayout.Toggle (_autoHide, "Auto Hide Utilities Launcher",_toggleStyle);
 			_disableKraken = GUILayout.Toggle (_disableKraken, "Disable \"Unleash the Kraken\"",_toggleStyle);
 			int themeSelection = GUILayout.SelectionGrid (KartographStyle.Instance.Theme, 
 				new string[]{ "KSP", "Unity" }, 3, _buttonStyle,
 				GUILayout.MinWidth (300.0f));
-			if (themeSelection != KartographStyle.Instance.Theme) {
+			if (themeSelection != KartographStyle.Instance.Theme)
 				KartographStyle.Instance.SetTheme (themeSelection);
-				_hasInitStyles = false;
-			}
+
 			if (GUILayout.Button ("Close", _buttonStyle)) {
 				ToggleWindow ();
 			}
@@ -123,17 +120,15 @@ namespace Kartographer
 		/// <summary>
 		/// Initializes the styles.
 		/// </summary>
-		private void InitStyles()
+		public void InitStyles()
 		{
 			_windowStyle = KartographStyle.Instance.Window;
 			_labelStyle = KartographStyle.Instance.Label;
-			_centeredLabelStyle = KartographStyle.Instance.CenteredLabel;
-			_textFieldStyle = KartographStyle.Instance.TextField;
-			_textAreaStyle = KartographStyle.Instance.TextArea;
+//			_centeredLabelStyle = KartographStyle.Instance.CenteredLabel;
+//			_textFieldStyle = KartographStyle.Instance.TextField;
+//			_textAreaStyle = KartographStyle.Instance.TextArea;
 			_buttonStyle = KartographStyle.Instance.Button;
 			_toggleStyle = KartographStyle.Instance.Toggle;
-
-			_hasInitStyles = true;
 		}
 	}
 }

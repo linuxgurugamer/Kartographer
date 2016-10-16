@@ -9,7 +9,7 @@ using KSP.IO;
 
 namespace Kartographer
 {
-	[KSPAddon(KSPAddon.Startup.Flight,false)]
+	[KSPAddonImproved(KSPAddonImproved.Startup.Flight | KSPAddonImproved.Startup.TrackingStation, false)]
 	public class FocusSelect: MonoBehaviour
 	{
 		static private FocusSelect _instance;
@@ -22,7 +22,7 @@ namespace Kartographer
 		private Vector2		_scrollPos = new Vector2();
 		private GUIStyle 	_windowStyle;
 		private GUIStyle 	_labelStyle;
-		private GUIStyle 	_centeredLabelStyle;
+//		private GUIStyle 	_centeredLabelStyle;
 		private GUIStyle	_buttonStyle;
 		private GUIStyle	_scrollStyle;
 		private GUIStyle	_toggleStyle;
@@ -30,22 +30,29 @@ namespace Kartographer
 		private bool		_active = false;
 		private bool 		_bodyList = false;
 		private bool 		_refreshHeight = false;
-		private bool 		_targetMode = false;
+//		private bool 		_targetMode = false;
 		private int 		_maneuverCnt = 0;
 		private Dictionary<CelestialBody,bool> _expanded = new Dictionary<CelestialBody,bool>();
 		private List<CelestialBody> _bodies = new List<CelestialBody>();
-		public void Start()
-		{
+
+		public void Awake() {
 			if (_instance)
 				Destroy (_instance);
 			_instance = this;
-			_winID = GUIUtility.GetControlID (FocusType.Passive);
-			Debug.Log ("Focus Select Start");
+		}
+
+		public void Start()
+		{
+//			Debug.Log ("Focus Select Start");
 			PluginConfiguration config = PluginConfiguration.CreateForType<KartographSettings> ();
 			config.load ();
+
+			_winID = GUIUtility.GetControlID (FocusType.Passive);
 			_windowPos = config.GetValue<Rect> ("FocusWindowPos",new Rect());
 			_windowPos.width = 0.0f;
 			_windowPos.height = 0.0f;
+
+			InitStyles ();
 		}
 
 		/// <summary>
@@ -53,7 +60,7 @@ namespace Kartographer
 		/// </summary>
 		public void OnDestroy()
 		{
-			RenderingManager.RemoveFromPostDrawQueue (0, OnDraw);
+//			RenderingManager.RemoveFromPostDrawQueue (0, OnDraw);
 			PluginConfiguration config = PluginConfiguration.CreateForType<KartographSettings> ();
 			config.load ();
 			config.SetValue ("FocusWindowPos",_windowPos);
@@ -62,47 +69,34 @@ namespace Kartographer
 				_instance = null;
 		}
 
+        public void OnGUI()
+        {
+            if (_active)
+            {
+				if (_active && IsUsable()) {
+					_windowPos = GUILayout.Window (_winID, _windowPos, OnWindow, "Focus Select", _windowStyle);
+					if (_windowPos.x == 0.0f && _windowPos.y == 0.0f) {
+						_windowPos.y = Screen.height * 0.5f - Math.Max(_windowPos.height * 0.5f,150.0f);
+						_windowPos.x = Screen.width * 0.5f - _windowPos.width * 0.5f;
+					}
+				}
+            }
+        }
+
 		/// <summary>
 		/// Toggles window visibility.
 		/// </summary>
 		public void ToggleWindow()
 		{
 			_active = !_active;
-			if (_active) {
-				RenderingManager.AddToPostDrawQueue (0, OnDraw);
-			} else {
-				RenderingManager.RemoveFromPostDrawQueue (0, OnDraw);
-			}
 		}
 
 		public bool IsUsable()
 		{
 			if (HighLogic.LoadedSceneHasPlanetarium)
-			{
-				if (MapView.MapIsEnabled)
-					return true;
-				else if (HighLogic.LoadedSceneIsFlight)
-					return false;
-				else if (HighLogic.LoadedScene == GameScenes.TRACKSTATION)
-					return true;
-			}
-			return false;
-		}
-
-
-		/// <summary>
-		/// Callback when a draw is requested.
-		/// </summary>
-		private void OnDraw()
-		{
-			InitStyles ();
-			if (_active && IsUsable()) {
-				_windowPos = GUILayout.Window (_winID, _windowPos, OnWindow, "Focus Select", _windowStyle);
-				if (_windowPos.x == 0.0f && _windowPos.y == 0.0f) {
-					_windowPos.y = Screen.height * 0.5f - Math.Max(_windowPos.height * 0.5f,150.0f);
-					_windowPos.x = Screen.width * 0.5f - _windowPos.width * 0.5f;
-				}
-			}
+				return true;
+			else
+				return false;
 		}
 
 		/// <summary>
@@ -118,7 +112,7 @@ namespace Kartographer
 			int maneuverCount = _maneuverCnt;
 			int bodyCount = _bodies.Count;
 			_bodies.Clear ();
-			GUILayout.BeginVertical (GUILayout.Width(200.0f));
+			GUILayout.BeginVertical (GUILayout.Width(300.0f));
 			if (FlightGlobals.ActiveVessel != null) {
 				Vessel vessel = FlightGlobals.ActiveVessel;
 				GUILayout.Label ("Vessel:", _labelStyle);
@@ -140,6 +134,8 @@ namespace Kartographer
 						if (GUILayout.Button ("Maneuver " + i, _buttonStyle)) {
 							MapObject map = PlanetariumCamera.fetch.targets.Find (mo => mo.maneuverNode == node);
 							if (map != null) {
+								if (HighLogic.LoadedSceneIsFlight)
+									MapView.EnterMapView();						
 								PlanetariumCamera.fetch.SetTarget (map);
 							}
 						}
@@ -153,13 +149,13 @@ namespace Kartographer
 				_refreshHeight = true;
 			if (_bodyList) {
 				CelestialBody sun = PSystemManager.Instance.sun.sun;
-				_scrollPos = GUILayout.BeginScrollView (_scrollPos, _scrollStyle, GUILayout.MinWidth (200.0f), GUILayout.Height (200.0f));
+				_scrollPos = GUILayout.BeginScrollView (_scrollPos, _scrollStyle, GUILayout.MinWidth (300.0f), GUILayout.Height (200.0f));
 				GUILayout.BeginVertical ();
 				DrawCelestialBodyGUI (sun, 0);
 				GUILayout.EndVertical ();
 				GUILayout.EndScrollView ();
 			}
-			_targetMode = GUILayout.Toggle (_targetMode, "Target Mode", _toggleStyle);
+//			_targetMode = GUILayout.Toggle (_targetMode, "Target Mode", _toggleStyle);
 			if (GUILayout.Button ("Close", _buttonStyle)) {
 				ToggleWindow ();
 			}
@@ -173,13 +169,17 @@ namespace Kartographer
 		{
 			MapObject map = PlanetariumCamera.fetch.targets.Find (mo => mo.Discoverable.Equals(ob));
 			if (map != null) {
-				if (GUILayout.Button (map.Discoverable.RevealName (), _buttonStyle)) {
-					if (_targetMode && map.celestialBody != null) {
-						FlightGlobals.fetch.SetVesselTarget (map.celestialBody);
-					} else {
-						PlanetariumCamera.fetch.SetTarget (map);
-					}
+				GUILayout.BeginHorizontal ();
+				if (GUILayout.Button ("*", _buttonStyle, GUILayout.Width(20))) {
+					FlightGlobals.fetch.SetVesselTarget (map.celestialBody);
 				}
+
+				if (GUILayout.Button (map.Discoverable.RevealName (), _buttonStyle)) {
+					if (HighLogic.LoadedSceneIsFlight)
+						MapView.EnterMapView();						
+					PlanetariumCamera.fetch.SetTarget (map);
+				}
+				GUILayout.EndHorizontal ();
 			}
 		}
 
@@ -227,19 +227,18 @@ namespace Kartographer
 			}
 		}
 
-
 		/// <summary>
 		/// Initializes the styles.
 		/// </summary>
-		private void InitStyles()
-		{
+		public void InitStyles() {
 			_windowStyle = KartographStyle.Instance.Window;
 			_labelStyle = KartographStyle.Instance.Label;
-			_centeredLabelStyle = KartographStyle.Instance.CenteredLabel;
+//			_centeredLabelStyle = KartographStyle.Instance.CenteredLabel;
 			_buttonStyle = KartographStyle.Instance.Button;
 			_scrollStyle = KartographStyle.Instance.ScrollView;
 			_toggleStyle = KartographStyle.Instance.Toggle;
 		}
+
 	}
 }
 

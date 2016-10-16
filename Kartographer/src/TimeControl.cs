@@ -19,7 +19,7 @@ namespace Kartographer
 
 		private GUIStyle 	_labelStyle;
 		private GUIStyle	_buttonStyle;
-		private GUIStyle	_scrollStyle;
+//		private GUIStyle	_scrollStyle;
 		private double 		_UT = 0.0d;
 		private int 		_timeGranularity = 1;
 		private int 		_menuSelection = 0;
@@ -297,7 +297,7 @@ namespace Kartographer
 		{
 			_labelStyle = KartographStyle.Instance.Label;
 			_buttonStyle = KartographStyle.Instance.Button;
-			_scrollStyle = KartographStyle.Instance.ScrollView;
+//			_scrollStyle = KartographStyle.Instance.ScrollView;
 		}
 	}
 }

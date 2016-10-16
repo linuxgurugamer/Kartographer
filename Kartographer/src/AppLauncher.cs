@@ -5,7 +5,7 @@
 
 using System;
 using UnityEngine;
-
+using KSP.UI.Screens;
 
 
 namespace Kartographer
@@ -26,31 +26,37 @@ namespace Kartographer
 		private bool 		_active = false;
 		private Rect 		_windowPos = new Rect();
 		private GUIStyle 	_windowStyle;
-		private GUIStyle 	_labelStyle;
-		private GUIStyle 	_centeredLabelStyle;
+//		private GUIStyle 	_labelStyle;
+//		private GUIStyle 	_centeredLabelStyle;
 		private GUIStyle	_buttonStyle;
 		private int 		_winID;
 		private float 		_autoHideTime = 0.0f;
 		public ApplicationLauncherButton _toolbarButton;
 		private IButton _altToolbarButton = null;
 		private PopupMenuDrawable _popMenu = null;
+
+		/// <summary>
+		/// Awake this instance.
+		/// </summary>
+		public void Awake() {
+			if (_instance)
+				Destroy (_instance);
+			_instance = this;
+		}
+
 		/// <summary>
 		/// Start this instance.
 		/// </summary>
 		public void Start()
 		{
-			if (_instance)
-				Destroy (_instance);
-			_instance = this;
 			_winID = GUIUtility.GetControlID (FocusType.Passive);
+
+			InitStyles ();
+
 			GameEvents.onGUIApplicationLauncherReady.Add (OnAppLaunchReady);
 			GameEvents.onGameSceneSwitchRequested.Add (OnSceneChange);
 			GameEvents.OnMapEntered.Add (Resize);
 			GameEvents.OnMapExited.Add (Resize);
-
-			if (ApplicationLauncher.Ready) {
-				OnAppLaunchReady ();
-			}
 		}
 
 		/// <summary>
@@ -62,11 +68,35 @@ namespace Kartographer
 			GameEvents.onGameSceneSwitchRequested.Remove (OnSceneChange);
 			GameEvents.OnMapEntered.Remove (Resize);
 			GameEvents.OnMapExited.Remove (Resize);
-			RenderingManager.RemoveFromPostDrawQueue (0, OnDraw);
+
 			DestroyButtons ();
 			ControlUnlock ();
 			if (_instance == this)
 				_instance = null;
+		}
+
+		public void OnGUI() {
+			if (_active) {
+				_windowPos = GUILayout.Window (_winID, _windowPos, OnWindow, "Kartograher", _windowStyle);
+				if ((_windowPos.x == 0.0f && _windowPos.y == 0.0f) || _windowPos.yMax > Screen.height) {
+					if (_toolbarButton != null) {
+						Vector3 toolPos = Camera.current.WorldToScreenPoint (_toolbarButton.GetAnchor ());
+						_windowPos.x = toolPos.x - _windowPos.width * 0.5f;
+						_windowPos.y = (Screen.height - toolPos.y);
+						if (!ApplicationLauncher.Instance.IsPositionedAtTop) {
+							_windowPos.y -= _windowPos.height;
+						}
+					}
+				}
+				if (_windowPos.xMax + 5.0f > Screen.width) {
+					_windowPos.x -= _windowPos.xMax - Screen.width - 5.0f;
+				}
+			}
+			if (_active && _windowPos.Contains (Event.current.mousePosition)) {
+				ControlLock ();
+			} else {
+				ControlUnlock();
+			}
 		}
 
 		/// <summary>
@@ -156,10 +186,9 @@ namespace Kartographer
 		/// </summary>
 		public void onActivate()
 		{
-			Debug.Log ("Kartographer App Launch Activate - Pos:"+_windowPos.x +" "+_windowPos.y);
+//			Debug.Log ("Kartographer App Launch Activate - Pos:"+_windowPos.x +" "+_windowPos.y);
 			_windowPos.height = 0.0f;
 			_active = true;
-			RenderingManager.AddToPostDrawQueue (0, OnDraw);
 		}
 
 		/// <summary>
@@ -167,10 +196,9 @@ namespace Kartographer
 		/// </summary>
 		public void onDeactivate()
 		{
-			Debug.Log ("Kartographer App Launch Deactivate");
+//			Debug.Log ("Kartographer App Launch Deactivate");
 			_active = false;
 			_autoHideTime = 0.0f;
-			RenderingManager.RemoveFromPostDrawQueue (0, OnDraw);
 			ControlUnlock ();
 		}
 
@@ -199,36 +227,6 @@ namespace Kartographer
 			}
 		}
 
-		/// <summary>
-		/// Callback when a draw is requested.
-		/// </summary>
-		public void OnDraw()
-		{
-			InitStyles ();
-			if (_active) {
-				_windowPos = GUILayout.Window (_winID, _windowPos, OnWindow, "Kartograher", _windowStyle);
-				if ((_windowPos.x == 0.0f && _windowPos.y == 0.0f) || _windowPos.yMax > Screen.height) {
-					if (_toolbarButton != null) {
-						Vector3 toolPos = Camera.current.WorldToScreenPoint (_toolbarButton.GetAnchor ());
-						_windowPos.x = toolPos.x - _windowPos.width * 0.5f;
-						_windowPos.y = (Screen.height - toolPos.y);
-						if (!ApplicationLauncher.Instance.IsPositionedAtTop) {
-							_windowPos.y -= _windowPos.height;
-						}
-					}
-				}
-				if (_windowPos.xMax + 5.0f > Screen.width) {
-					_windowPos.x -= _windowPos.xMax - Screen.width - 5.0f;
-				}
-			}
-			if (_active && _windowPos.Contains (Event.current.mousePosition)) {
-				ControlLock ();
-			} else {
-				ControlUnlock();
-			}
-		}
-
-
 		private void CreateLauncherButton (string text, ButtonClickHandler handler)
 		{
 			if (_popMenu == null) {
@@ -242,6 +240,7 @@ namespace Kartographer
 				option.OnClick += (ClickEvent e) => { handler(); };
 			}
 		}
+
 		private void CreateLaunchers()
 		{
 			if (KartographSettings.Instance != null) {
@@ -279,20 +278,19 @@ namespace Kartographer
 			GUILayout.BeginVertical (GUILayout.Width(150.0f));
 			CreateLaunchers ();
 			GUILayout.EndVertical ();
-
+			GUI.DragWindow ();
 		}
 
 		/// <summary>
 		/// Initializes the styles.
 		/// </summary>
-		private void InitStyles()
+		public void InitStyles()
 		{
 			_windowStyle = KartographStyle.Instance.Window;
-			_labelStyle = KartographStyle.Instance.Label;
-			_centeredLabelStyle = KartographStyle.Instance.CenteredLabel;
+//			_labelStyle = KartographStyle.Instance.Label;
+//			_centeredLabelStyle = KartographStyle.Instance.CenteredLabel;
 			_buttonStyle = KartographStyle.Instance.Button;
 		}
-
 	}
 }
 

@@ -208,6 +208,24 @@ namespace Kartographer
 			_textAreaStyle = new GUIStyle (skin.textArea);
 			_toggleStyle = new GUIStyle (skin.toggle);
 			_hasInitStyles = true;
+
+			if (KartographSettings.Instance != null)
+				KartographSettings.Instance.InitStyles ();
+
+			if (FocusSelect.Instance != null)
+				FocusSelect.Instance.InitStyles ();
+
+			if (AppLauncher.Instance != null)
+				AppLauncher.Instance.InitStyles ();
+
+			if (ManeuverEditor.Instance != null)
+				ManeuverEditor.Instance.InitStyles ();
+
+			if (WarpTo.Instance != null)
+				WarpTo.Instance.InitStyles ();
+
+			if (VesselSelect.Instance != null)
+				VesselSelect.Instance.InitStyles ();
 		}
 	}
 

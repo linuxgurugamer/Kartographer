@@ -14,7 +14,7 @@ namespace Kartographer
 		public const double 	ONE_KDAY  = 6.0 * 60.0 * 60.0; // Kerbin day's are 6 hours.
 		public const double 	ONE_KYEAR = 426.0 * ONE_KDAY; // Kerbin years - 426 d 0 h 30 min
 		public const double     ONE_KORBIT = 426.0 * ONE_KDAY + 32.0 * ONE_KMIN + 24.6; // Kerbin years - 426 d 0 h 32 min 24.6 s
-		public const string 	VERSION = "0.1.0.2";
+		public const string 	VERSION = "0.1.0.3";
 	}
 }
 
