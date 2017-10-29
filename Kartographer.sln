@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 VisualStudioVersion = 12.0.40629.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kartographer", "Kartographer.csproj", "{7223B701-AD82-4928-8B5A-17E484D4A8A6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kartographer", "Kartographer\Kartographer.csproj", "{7223B701-AD82-4928-8B5A-17E484D4A8A6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

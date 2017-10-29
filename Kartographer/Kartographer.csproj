@@ -29,14 +29,26 @@
     <WarningLevel>4</WarningLevel>
     <CustomCommands>
       <CustomCommands>
-        <Command type="AfterBuild" command="cp ${TargetFile} /home/realgecko/Development/KSP/GameData/${ProjectName}" />
-        <Command type="Execute" command="/usr/bin/wine /home/realgecko/Development/KSP/KSP_x64.exe" workingdir="/home/realgecko/Development/KSP/" />
-        <Command type="AfterBuild" command="cp ${TargetFile} ${SolutionDir}/GameData/${ProjectName}" />
+        <Command>
+          <type>AfterBuild</type>
+          <command>cp ${TargetFile} /home/realgecko/Development/KSP/GameData/${ProjectName}</command>
+        </Command>
+        <Command>
+          <type>AfterBuild</type>
+          <command>cp ${TargetFile} ${SolutionDir}/GameData/${ProjectName}</command>
+        </Command>
       </CustomCommands>
     </CustomCommands>
   </PropertyGroup>
   <PropertyGroup>
     <RootNamespace>Kartographer</RootNamespace>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(RunConfiguration)' == 'Default' ">
+    <StartAction>Program</StartAction>
+    <StartProgram>..\..\..\..\..\usr\bin\wine</StartProgram>
+    <StartArguments>/home/realgecko/Development/KSP/KSP_x64.exe</StartArguments>
+    <StartWorkingDirectory>..\..\KSP\</StartWorkingDirectory>
+    <ConsolePause>false</ConsolePause>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -54,27 +66,18 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="CHANGELOG.md" />
-    <None Include="LICENSE.md" />
-    <None Include="README.md" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="GameData\Kartographer\Textures\sat_map.png" />
-    <Content Include="GameData\Kartographer\Textures\sat_map_small.png" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="src\AppLauncher.cs" />
-    <Compile Include="src\FocusSelect.cs" />
-    <Compile Include="src\KartographSettings.cs" />
-    <Compile Include="src\KartographStyle.cs" />
-    <Compile Include="src\KSPAddonImproved.cs" />
-    <Compile Include="src\ManeuverEditor.cs" />
-    <Compile Include="src\TimeControl.cs" />
-    <Compile Include="src\ToolbarWrapper.cs" />
-    <Compile Include="src\Util.cs" />
-    <Compile Include="src\VesselSelect.cs" />
-    <Compile Include="src\WarpTo.cs" />
+    <Compile Include="AppLauncher.cs" />
+    <Compile Include="FocusSelect.cs" />
+    <Compile Include="KartographSettings.cs" />
+    <Compile Include="KartographStyle.cs" />
+    <Compile Include="KSPAddonImproved.cs" />
+    <Compile Include="ManeuverEditor.cs" />
+    <Compile Include="TimeControl.cs" />
+    <Compile Include="ToolbarWrapper.cs" />
+    <Compile Include="Util.cs" />
+    <Compile Include="VesselSelect.cs" />
+    <Compile Include="WarpTo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSHARP.Targets" />
   <ProjectExtensions>
