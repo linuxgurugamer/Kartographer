@@ -1,4 +1,17 @@
-﻿# 0.1.0.3
+﻿### 1.1.0
+- Removed all internal styling
+- Focus Select removed as it's functionality superseeded by [Flight Plan](https://forum.kerbalspaceprogram.com/index.php?/topic/151899-ksp-131-flight-plan-104-crazy-trajectories-demystified-2017-10-28/) and new tool Celestial Body Data
+- Added Celestial Body Data: targeting, viewing, data, orbital data
+- Fixed input locking on all tools to prevent clickthroughs
+- Updated Blizzy's Toolbar Wrapper
+- Changed Blizzy's Toolbar button behavior (autohide feature still does not work with Toolbar button)
+- Toolbar may be switched on the fly
+- Some code refactoring
+- Next/Prev buttons swapped in Maneuver Editor
+- Replaced toolbar icon with new one from [flaticon.com](https://www.flaticon.com/free-icon/compass_346045)
+- All mods are hidden on gamepause or F2
+
+# 0.1.0.3
 - Recompile for KSP 1.2
 - Focus Changer active in flight mode
 - Targeting mode disabled in Focus changer, each celestial has additional button with "*" mark for targeting

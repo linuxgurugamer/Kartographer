@@ -21,9 +21,15 @@ target.
 This utility also allows you to "Unleash the Kraken" on you current vessel. It will destroy a random part on your vessel until it is gone. 
 This is a far more satisfying way of clearing debris than terminating it in the tracking station.
 
-## Focus Select
-Change the map view focus with the click of a button. It will detect bodies on your current or planned trajectory and present those as a
-short list. You also have the ability to pick from any celestial body from a list.
+## Focus Select (removed)
+Use [Flight Plan](https://forum.kerbalspaceprogram.com/index.php?/topic/151899-ksp-131-flight-plan-104-crazy-trajectories-demystified-2017-10-28/) instead.
+~~Change the map view focus with the click of a button. It will detect bodies on your current or planned trajectory and present those as a
+short list. You also have the ability to pick from any celestial body from a list.~~
+
+## Celestial Body Data
+- Lists all celestial bodies in hierarchical order
+- Provides full information about celestial body and it's orbit
+- Allows to focus view and target the body
 
 ## Maneuver Editor
 Gives you full control over your maneuver nodes. Precisely control the time and delta-V of your maneuvers. Store your maneuvers,

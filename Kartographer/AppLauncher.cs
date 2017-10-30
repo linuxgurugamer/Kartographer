@@ -3,42 +3,37 @@
  * This file is subject to the included LICENSE.md file. 
  */
 
-using System;
 using UnityEngine;
 using KSP.UI.Screens;
-
+using KSP.IO;
 
 namespace Kartographer
 {
-	public delegate void ButtonClickHandler();
+	public delegate void ButtonClickHandler ();
 
-	[KSPAddonImproved(KSPAddonImproved.Startup.Flight | KSPAddonImproved.Startup.TrackingStation, false)]
-	public class AppLauncher: MonoBehaviour
+	[KSPAddonImproved (KSPAddonImproved.Startup.Flight | KSPAddonImproved.Startup.TrackingStation, false)]
+	public class AppLauncher : MonoBehaviour
 	{
 
 		const float AUTO_HIDE_TIME = 5.0f;
 
-		static public AppLauncher Instance
-		{
+		static public AppLauncher Instance {
 			get { return _instance; }
 		}
-		static private AppLauncher _instance = null;
-		private bool 		_active = false;
-		private Rect 		_windowPos = new Rect();
-		private GUIStyle 	_windowStyle;
-//		private GUIStyle 	_labelStyle;
-//		private GUIStyle 	_centeredLabelStyle;
-		private GUIStyle	_buttonStyle;
-		private int 		_winID;
-		private float 		_autoHideTime = 0.0f;
+		static AppLauncher _instance;
+		bool _active;
+		bool _hidden;
+		Rect _windowPos;
+		int _winID;
+		float _autoHideTime;
 		public ApplicationLauncherButton _toolbarButton;
-		private IButton _altToolbarButton = null;
-		private PopupMenuDrawable _popMenu = null;
+		IButton _altToolbarButton;
 
 		/// <summary>
 		/// Awake this instance.
 		/// </summary>
-		public void Awake() {
+		public void Awake ()
+		{
 			if (_instance)
 				Destroy (_instance);
 			_instance = this;
@@ -47,37 +42,66 @@ namespace Kartographer
 		/// <summary>
 		/// Start this instance.
 		/// </summary>
-		public void Start()
+		public void Start ()
 		{
 			_winID = GUIUtility.GetControlID (FocusType.Passive);
 
-			InitStyles ();
+			PluginConfiguration config = PluginConfiguration.CreateForType<KartographSettings> ();
+			config.load ();
+			_windowPos = config.GetValue ("AppLaunchPos", new Rect (new Vector2 (Screen.width / 2, Screen.height / 2), Vector2.zero));
 
 			GameEvents.onGUIApplicationLauncherReady.Add (OnAppLaunchReady);
 			GameEvents.onGameSceneSwitchRequested.Add (OnSceneChange);
 			GameEvents.OnMapEntered.Add (Resize);
 			GameEvents.OnMapExited.Add (Resize);
+			GameEvents.onHideUI.Add (Hide);
+			GameEvents.onShowUI.Add (UnHide);
+			GameEvents.onGamePause.Add (Hide);
+			GameEvents.onGameUnpause.Add (UnHide);
 		}
 
 		/// <summary>
 		/// Called when this object is destroyed.
 		/// </summary>
-		public void OnDestroy()
+		public void OnDestroy ()
 		{
-			GameEvents.onGUIApplicationLauncherReady.Remove(OnAppLaunchReady);
+			ControlUnlock ();
+
+			PluginConfiguration config = PluginConfiguration.CreateForType<KartographSettings> ();
+			config.load ();
+			config.SetValue ("AppLaunchPos", _windowPos);
+			config.save ();
+
+			DestroyButtons ();
+
+			GameEvents.onGUIApplicationLauncherReady.Remove (OnAppLaunchReady);
 			GameEvents.onGameSceneSwitchRequested.Remove (OnSceneChange);
 			GameEvents.OnMapEntered.Remove (Resize);
 			GameEvents.OnMapExited.Remove (Resize);
+			GameEvents.onHideUI.Remove (Hide);
+			GameEvents.onShowUI.Remove (UnHide);
+			GameEvents.onGamePause.Remove (Hide);
+			GameEvents.onGameUnpause.Remove (UnHide);
 
-			DestroyButtons ();
-			ControlUnlock ();
 			if (_instance == this)
 				_instance = null;
 		}
 
-		public void OnGUI() {
-			if (_active) {
-				_windowPos = GUILayout.Window (_winID, _windowPos, OnWindow, "Kartograher", _windowStyle);
+		public void Hide ()
+		{
+			_hidden = true;
+		}
+
+		public void UnHide ()
+		{
+			_hidden = false;
+		}
+
+		public void OnGUI ()
+		{
+			if (_active && !_hidden) {
+				if (KartographSettings.Instance.UseKspSkin) GUI.skin = HighLogic.Skin;
+				_windowPos = GUILayout.Window (_winID, _windowPos, OnWindow, "Kartograher");
 				if ((_windowPos.x == 0.0f && _windowPos.y == 0.0f) || _windowPos.yMax > Screen.height) {
 					if (_toolbarButton != null) {
 						Vector3 toolPos = Camera.current.WorldToScreenPoint (_toolbarButton.GetAnchor ());
@@ -91,11 +115,11 @@ namespace Kartographer
 				if (_windowPos.xMax + 5.0f > Screen.width) {
 					_windowPos.x -= _windowPos.xMax - Screen.width - 5.0f;
 				}
-			}
-			if (_active && _windowPos.Contains (Event.current.mousePosition)) {
-				ControlLock ();
-			} else {
-				ControlUnlock();
+				if (_windowPos.Contains (Event.current.mousePosition)) {
+					ControlLock ();
+				} else {
+					ControlUnlock ();
+				}
 			}
 		}
 
@@ -103,7 +127,7 @@ namespace Kartographer
 		/// Callback when the scene changes.
 		/// </summary>
 		/// <param name="evt">Evt.</param>
-		public void OnSceneChange(GameEvents.FromToAction<GameScenes,GameScenes> evt)
+		public void OnSceneChange (GameEvents.FromToAction<GameScenes, GameScenes> evt)
 		{
 			Resize ();
 		}
@@ -111,22 +135,15 @@ namespace Kartographer
 		/// <summary>
 		/// Callback when the app launcher bar is ready.
 		/// </summary>
-		public void OnAppLaunchReady()
+		internal void OnAppLaunchReady ()
 		{
-			if (ToolbarManager.ToolbarAvailable) {
+			if (ToolbarManager.ToolbarAvailable && KartographSettings.Instance.UseToolbar) {
 				_altToolbarButton = ToolbarManager.Instance.add ("Kartographer", "AppLaunch");
-				_altToolbarButton.TexturePath = "Kartographer/Textures/sat_map_small";
+				_altToolbarButton.TexturePath = "Kartographer/Textures/kartographer-icon-sm";
+				_altToolbarButton.ToolTip = "Kartographer";
 				_altToolbarButton.Visible = true;
 				_altToolbarButton.OnClick += (ClickEvent e) => {
-					if (_altToolbarButton.Drawable == null) {
-						_popMenu = new PopupMenuDrawable();
-						CreateLaunchers();
-						_altToolbarButton.Drawable = _popMenu;
-					} else {
-						_popMenu.Destroy();
-						_popMenu = null;
-						_altToolbarButton.Drawable = null;
-					}
+					ToggleWindow ();
 				};
 			} else {
 				_toolbarButton = ApplicationLauncher.Instance.AddModApplication (
@@ -138,7 +155,7 @@ namespace Kartographer
 					noOp,
 					ApplicationLauncher.AppScenes.FLIGHT | ApplicationLauncher.AppScenes.MAPVIEW |
 					ApplicationLauncher.AppScenes.TRACKSTATION,
-					(Texture)GameDatabase.Instance.GetTexture ("Kartographer/Textures/sat_map", false)
+					GameDatabase.Instance.GetTexture ("Kartographer/Textures/kartographer-icon", false)
 				);
 			}
 		}
@@ -146,7 +163,7 @@ namespace Kartographer
 		/// <summary>
 		/// Destroy the buttons.
 		/// </summary>
-		public void DestroyButtons()
+		internal void DestroyButtons ()
 		{
 			if (_toolbarButton != null) {
 				ApplicationLauncher.Instance.RemoveModApplication (_toolbarButton);
@@ -160,12 +177,12 @@ namespace Kartographer
 		/// <summary>
 		/// No op.
 		/// </summary>
-		public void noOp() {}
+		public void noOp () { }
 
 		/// <summary>
 		/// Force a window resize.
 		/// </summary>
-		public void Resize()
+		public void Resize ()
 		{
 			_windowPos.height = 0.0f;
 		}
@@ -173,79 +190,67 @@ namespace Kartographer
 		/// <summary>
 		/// Toggles the window.
 		/// </summary>
-		public void ToggleWindow()
+		internal void ToggleWindow ()
 		{
-			if (_active)
-				onDeactivate ();
-			else
-				onActivate ();
+			if (_active) {
+				_active = false;
+				_autoHideTime = 0.0f;
+				ControlUnlock ();
+			} else {
+				_windowPos.width = 0.0f;
+				_windowPos.height = 0.0f;
+				_active = true;
+			}
 		}
-
-		/// <summary>
-		/// Display the app launcher.
-		/// </summary>
-		public void onActivate()
-		{
-//			Debug.Log ("Kartographer App Launch Activate - Pos:"+_windowPos.x +" "+_windowPos.y);
-			_windowPos.height = 0.0f;
-			_active = true;
-		}
-
-		/// <summary>
-		/// Hide the launcher.
-		/// </summary>
-		public void onDeactivate()
-		{
-//			Debug.Log ("Kartographer App Launch Deactivate");
-			_active = false;
-			_autoHideTime = 0.0f;
-			ControlUnlock ();
-		}
-
 
 		/// <summary>
 		/// Lock the Controls.
 		/// </summary>
-		private void ControlLock()
+		void ControlLock ()
 		{
-			InputLockManager.SetControlLock (ControlTypes.EDITOR_LOCK, "Kartographer_Launch");
+			InputLockManager.SetControlLock (ControlTypes.ALLBUTTARGETING, "Kartographer" + name);
 		}
+
 		/// <summary>
 		/// Unlock the Controls.
 		/// </summary>
-		private void ControlUnlock()
+		void ControlUnlock ()
 		{
-			InputLockManager.RemoveControlLock("Kartographer_Launch");
+			InputLockManager.RemoveControlLock ("Kartographer" + name);
 		}
 
-		public void Update()
+		public void Update ()
 		{
 			if (KartographSettings.Instance.AutoHide && _autoHideTime != 0.0f && Time.time > _autoHideTime &&
 				_active && !_windowPos.Contains (Event.current.mousePosition)) {
-				_toolbarButton.enabled = false;
-				onDeactivate ();
+				if (_toolbarButton != null)
+					_toolbarButton.SetFalse ();
 			}
 		}
 
-		private void CreateLauncherButton (string text, ButtonClickHandler handler)
+		void CreateLauncherButton (string text, ButtonClickHandler handler)
 		{
-			if (_popMenu == null) {
-				if (GUILayout.Button (text, _buttonStyle)) {
-					handler ();
-					_autoHideTime = Time.time + AUTO_HIDE_TIME;
-				}
-			} else {
-				IButton option = _popMenu.AddOption (text);
-				option.Text = text;
-				option.OnClick += (ClickEvent e) => { handler(); };
+			if (GUILayout.Button (text)) {
+				handler ();
+				_autoHideTime = Time.time + AUTO_HIDE_TIME;
 			}
 		}
 
-		private void CreateLaunchers()
+		void CreateLaunchers ()
 		{
-			if (KartographSettings.Instance != null) {
-				CreateLauncherButton ("Settings", () => {
-					KartographSettings.Instance.ToggleWindow ();
+			if (VesselSelect.Instance != null && VesselSelect.Instance.IsUsable ()) {
+				CreateLauncherButton ("Vessel Select", () => {
+					VesselSelect.Instance.ToggleWindow ();
+				});
+			}
+			if (CelestialBodyData.Instance != null) {
+				CreateLauncherButton ("Celestials Data", () => {
+					CelestialBodyData.Instance.ToggleWindow ();
+				});
+			}
+			if (ManeuverEditor.Instance != null && ManeuverEditor.Instance.IsUsable ()) {
+				CreateLauncherButton ("Maneuver Editor", () => {
+					ManeuverEditor.Instance.ToggleWindow ();
 				});
 			}
 			if (WarpTo.Instance != null) {
@@ -253,44 +258,23 @@ namespace Kartographer
 					WarpTo.Instance.ToggleWindow ();
 				});
 			}
-			if (FocusSelect.Instance != null && FocusSelect.Instance.IsUsable()) {
-				CreateLauncherButton ("Focus Select", () => {
-					FocusSelect.Instance.ToggleWindow ();
-				});
-			}
-			if (VesselSelect.Instance != null && VesselSelect.Instance.IsUsable()) {
-				CreateLauncherButton ("Vessel Select", () => {
-					VesselSelect.Instance.ToggleWindow ();
-				});
-			}
-			if (ManeuverEditor.Instance != null && ManeuverEditor.Instance.IsUsable()	) {
-				CreateLauncherButton ("Maneuver Editor", () => {
-					ManeuverEditor.Instance.ToggleWindow ();
+			if (KartographSettings.Instance != null) {
+				CreateLauncherButton ("Settings", () => {
+					KartographSettings.Instance.ToggleWindow ();
 				});
 			}
 		}
+
 		/// <summary>
 		/// Draws the window.
 		/// </summary>
 		/// <param name="windowId">Window identifier.</param>
-		private void OnWindow(int windowId)
+		void OnWindow (int windowId)
 		{
-			GUILayout.BeginVertical (GUILayout.Width(150.0f));
+			GUILayout.BeginVertical (GUILayout.Width (150.0f));
 			CreateLaunchers ();
 			GUILayout.EndVertical ();
 			GUI.DragWindow ();
 		}
-
-		/// <summary>
-		/// Initializes the styles.
-		/// </summary>
-		public void InitStyles()
-		{
-			_windowStyle = KartographStyle.Instance.Window;
-//			_labelStyle = KartographStyle.Instance.Label;
-//			_centeredLabelStyle = KartographStyle.Instance.CenteredLabel;
-			_buttonStyle = KartographStyle.Instance.Button;
-		}
 	}
 }
-

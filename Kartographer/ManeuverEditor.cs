@@ -3,7 +3,6 @@
  * This file is subject to the included LICENSE.md file. 
  */
 
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using KSP.IO;
@@ -12,24 +11,22 @@ namespace Kartographer
 {
 	internal class StoredManeuver
 	{
-		private Vector3d _dv;
-		public Vector3d DeltaV
-		{
+		Vector3d _dv;
+		public Vector3d DeltaV {
 			get { return _dv; }
 		}
-		private double	 _UT;
-		public double UT
-		{
+		double _UT;
+		public double UT {
 			get { return _UT; }
 		}
-		private StoredManeuver _next = null;
+		StoredManeuver _next = null;
 		public StoredManeuver Next {
 			get { return _next; }
 			set { _next = value; }
 		}
 
 
-		public double getTotalDeltaV()
+		public double getTotalDeltaV ()
 		{
 			double next = 0.0d;
 			if (_next != null) {
@@ -37,7 +34,7 @@ namespace Kartographer
 			}
 			return _dv.magnitude + next;
 		}
-		public StoredManeuver(Vector3d dv, double UT, StoredManeuver next = null)
+		public StoredManeuver (Vector3d dv, double UT, StoredManeuver next = null)
 		{
 			_dv = dv;
 			_UT = UT;
@@ -47,40 +44,35 @@ namespace Kartographer
 	}
 
 
-	[KSPAddon(KSPAddon.Startup.Flight,false)]
-	public class ManeuverEditor: MonoBehaviour
+	[KSPAddon (KSPAddon.Startup.Flight, false)]
+	public class ManeuverEditor : MonoBehaviour
 	{
-		static public ManeuverEditor Instance
-		{
+		static public ManeuverEditor Instance {
 			get { return _instance; }
 		}
 
-		private Rect 		_windowPos = new Rect();
-		private Rect 		_savedPos = new Rect();
-		private Vector2		_scrollPos = new Vector2();
-		private GUIStyle 	_windowStyle;
-		private GUIStyle 	_labelStyle;
-//		private GUIStyle 	_centeredLabelStyle;
-		private GUIStyle	_buttonStyle;
-		private GUIStyle	_scrollStyle;
-		private GUIStyle	_toggleStyle;
-		private bool		_maneuverShow = false;
-		private ManeuverNode _maneuver = null;
-		private Vessel		_mvessel = null;
-		private int			_mindex = 0;
-		private int 		_winID;
-		private int 		_savedWinID;
-		private double		_increment = 1.0d;
-		private int 		_menuSelection = 2;
-		private bool		_minimize = false;
-		private List<StoredManeuver> _stored = new List<StoredManeuver>();
-		static private ManeuverEditor _instance;
-		private TimeControl _timeControl = new TimeControl();
+		Rect _windowPos = new Rect ();
+		Rect _savedPos = new Rect ();
+		Vector2 _scrollPos = new Vector2 ();
+		bool _maneuverShow;
+		bool _hidden;
+		ManeuverNode _maneuver;
+		Vessel _mvessel;
+		int _mindex;
+		int _winID;
+		int _savedWinID;
+		double _increment = 1.0d;
+		int _menuSelection = 2;
+		bool _minimize;
+		List<StoredManeuver> _stored = new List<StoredManeuver> ();
+		static ManeuverEditor _instance;
+		TimeControl _timeControl = new TimeControl ();
 
 		/// <summary>
 		/// Awake this instance.
 		/// </summary>
-		public void Awake() {
+		public void Awake ()
+		{
 			if (_instance)
 				Destroy (_instance);
 			_instance = this;
@@ -89,51 +81,67 @@ namespace Kartographer
 		/// <summary>
 		/// Start this instance.
 		/// </summary>
-		public void Start()
+		public void Start ()
 		{
 			_winID = GUIUtility.GetControlID (FocusType.Passive);
 			_savedWinID = GUIUtility.GetControlID (FocusType.Passive);
-//			Debug.Log ("Maneuver Editor Start");
 
 			PluginConfiguration config = PluginConfiguration.CreateForType<KartographSettings> ();
 			config.load ();
 
-			_windowPos = config.GetValue<Rect> ("ManeuverWindowPos",new Rect());
-			_windowPos.width = 0.0f;
-			_windowPos.height = 0.0f;
-
-			InitStyles ();
+			_windowPos = config.GetValue ("ManeuverWindowPos", new Rect (new Vector2 (Screen.width / 2, Screen.height / 2), Vector2.zero));
+			GameEvents.onHideUI.Add (Hide);
+			GameEvents.onShowUI.Add (UnHide);
+			GameEvents.onGamePause.Add (Hide);
+			GameEvents.onGameUnpause.Add (UnHide);
 		}
 
 		/// <summary>
 		/// Destroy this instance.
 		/// </summary>
-		public void OnDestroy()
+		public void OnDestroy ()
 		{
-//			RenderingManager.RemoveFromPostDrawQueue (0, OnDraw);
+			ControlUnlock ();
 			PluginConfiguration config = PluginConfiguration.CreateForType<KartographSettings> ();
 			config.load ();
-			config.SetValue ("ManeuverWindowPos",_windowPos);
+			config.SetValue ("ManeuverWindowPos", _windowPos);
 			config.save ();
+
+			GameEvents.onHideUI.Remove (Hide);
+			GameEvents.onShowUI.Remove (UnHide);
+			GameEvents.onGamePause.Remove (Hide);
+			GameEvents.onGameUnpause.Remove (UnHide);
+
 			if (_instance == this)
 				_instance = null;
 		}
 
-		public void OnGUI()
+		public void Hide ()
 		{
-			if (_maneuverShow)
-			{
-				if (_maneuverShow && IsUsable()) {
-					_windowPos = GUILayout.Window (_winID, _windowPos, OnWindow, "Maneuver Editor", _windowStyle);
-					if (_windowPos.x == 0.0f && _windowPos.y == 0.0f) {
-						_windowPos.y = Screen.height * 0.5f - Math.Max(_windowPos.height * 0.5f,200.0f);
-						_windowPos.x = 50.0f;
-					}
+			_hidden = true;
+		}
+
+		public void UnHide ()
+		{
+			_hidden = false;
+		}
+
+		public void OnGUI ()
+		{
+			if (_maneuverShow && !_hidden) {
+				if (KartographSettings.Instance.UseKspSkin) GUI.skin = HighLogic.Skin;
+				if (_maneuverShow && IsUsable ()) {
+					_windowPos = GUILayout.Window (_winID, _windowPos, OnWindow, "Maneuver Editor");
 					if (_stored.Count > 0) {
 						_savedPos.x = _windowPos.x + _windowPos.width + 10.0f;
 						_savedPos.y = _windowPos.y;
-						_savedPos = GUILayout.Window (_savedWinID, _savedPos, SavedWindow, "Saved Maneuvers", _windowStyle);
+						_savedPos = GUILayout.Window (_savedWinID, _savedPos, SavedWindow, "Saved Maneuvers");
 					}
+				}
+				if (_windowPos.Contains (Event.current.mousePosition) | _savedPos.Contains (Event.current.mousePosition)) {
+					ControlLock ();
+				} else {
+					ControlUnlock ();
 				}
 			}
 		}
@@ -141,19 +149,35 @@ namespace Kartographer
 		/// <summary>
 		/// Toggles the window.
 		/// </summary>
-		public void ToggleWindow()
+		internal void ToggleWindow ()
 		{
 			_maneuverShow = !_maneuverShow;
-			if (!_maneuverShow) {
-				Invoke ("ControlUnlock", 1);
-			}
+			if (!_maneuverShow) ControlUnlock ();
+			_windowPos.width = 0.0f;
+			_windowPos.height = 0.0f;
+		}
+
+		/// <summary>
+		/// Lock the Controls.
+		/// </summary>
+		void ControlLock ()
+		{
+			InputLockManager.SetControlLock (ControlTypes.ALLBUTTARGETING, "Kartographer" + name);
+		}
+
+		/// <summary>
+		/// Unlock the Controls.
+		/// </summary>
+		void ControlUnlock ()
+		{
+			InputLockManager.RemoveControlLock ("Kartographer" + name);
 		}
 
 		/// <summary>
 		/// Determines whether the maneuver node editor is allowed.
 		/// </summary>
 		/// <returns><c>true</c> if this editor is allowed; otherwise, <c>false</c>.</returns>
-		public bool IsAllowed()
+		public bool IsAllowed ()
 		{
 			return PSystemSetup.Instance.GetSpaceCenterFacility ("TrackingStation").GetFacilityLevel () > 0 &&
 				PSystemSetup.Instance.GetSpaceCenterFacility ("MissionControl").GetFacilityLevel () > 0;
@@ -163,16 +187,16 @@ namespace Kartographer
 		/// Determines whether this instance is usable.
 		/// </summary>
 		/// <returns><c>true</c> if this instance is usable; otherwise, <c>false</c>.</returns>
-		public bool IsUsable()
+		public bool IsUsable ()
 		{
-			return IsAllowed() && HighLogic.LoadedSceneIsFlight && MapView.MapIsEnabled;
+			return IsAllowed () && HighLogic.LoadedSceneIsFlight;
 		}
 
 		/// <summary>
 		/// Restores the maneuvers.
 		/// </summary>
 		/// <param name="stored">Stored maneuver.</param>
-		private void RestoreManeuver(StoredManeuver stored)
+		void RestoreManeuver (StoredManeuver stored)
 		{
 			DeleteAll ();
 			StoredManeuver restore = stored;
@@ -187,48 +211,48 @@ namespace Kartographer
 		/// Draws the window for saved maneuvers.
 		/// </summary>
 		/// <param name="windowId">Window identifier.</param>
-		private void SavedWindow(int windowId)
+		void SavedWindow (int windowId)
 		{
 			int i = 0;
-			GUILayout.BeginVertical (GUILayout.MinWidth(150.0f));
-			if (GUILayout.Button ("Clear All", _buttonStyle)) {
+			GUILayout.BeginVertical (GUILayout.MinWidth (150.0f));
+			if (GUILayout.Button ("Clear All")) {
 				_stored.Clear ();
 			}
 			bool oldMinimize = _minimize;
-			_minimize = GUILayout.Toggle (_minimize, "Minimize",_toggleStyle);
+			_minimize = GUILayout.Toggle (_minimize, "Minimize");
 			if (_minimize != oldMinimize) {
 				_savedPos.height = 0.0f;
 				_savedPos.width = 0.0f;
 			}
 			if (_minimize) {
-				GUILayout.Label ("Saved:" + _stored.Count, _labelStyle);
+				GUILayout.Label ("Saved:" + _stored.Count);
 			} else {
-				_scrollPos = GUILayout.BeginScrollView (_scrollPos, _scrollStyle, GUILayout.MinWidth (420.0f), GUILayout.Height (150.0f));
+				_scrollPos = GUILayout.BeginScrollView (_scrollPos, GUILayout.MinWidth (420.0f), GUILayout.Height (150.0f));
 				GUILayout.BeginVertical (GUILayout.Width (380.0f));
 				foreach (StoredManeuver stored in _stored) {
 					GUILayout.BeginHorizontal ();
-					GUILayout.Label ("" + i, _labelStyle, GUILayout.Width (15.0f));
-					GUILayout.Label ("Δv:" + KartographStyle.Instance.GetNumberString (stored.getTotalDeltaV ()) + "m/s", _labelStyle, GUILayout.Width (150.0f));
+					GUILayout.Label ("" + i, GUILayout.Width (15.0f));
+					GUILayout.Label ("Δv:" + Format.GetNumberString (stored.getTotalDeltaV ()) + "m/s", GUILayout.Width (150.0f));
 
 
-					if (GUILayout.Button ("Delete", _buttonStyle)) {
+					if (GUILayout.Button ("Delete")) {
 						_stored.Remove (stored);
 						_savedPos.height = 0.0f;
 					}
-					if (GUILayout.Button ("Restore", _buttonStyle) && _stored.Count > 0) {
+					if (GUILayout.Button ("Restore") && _stored.Count > 0) {
 						DeleteAll ();
 						RestoreManeuver (stored);
 					}
 					GUILayout.EndHorizontal ();
 					GUILayout.BeginHorizontal ();
 					double timeToNode = Planetarium.GetUniversalTime () - stored.UT;
-					GUILayout.Label ("", _labelStyle, GUILayout.Width (15.0f));
+					GUILayout.Label ("", GUILayout.Width (15.0f));
 
-					GUILayout.Label (" " + KartographStyle.Instance.GetTimeString (timeToNode), _labelStyle, GUILayout.Width (200.0f));
+					GUILayout.Label (" " + Format.GetTimeString (timeToNode), GUILayout.Width (200.0f));
 					GUILayout.EndHorizontal ();
 					i++;
 				}
-			
+
 				GUILayout.EndVertical ();
 				GUILayout.EndScrollView ();
 			}
@@ -238,39 +262,38 @@ namespace Kartographer
 		/// <summary>
 		/// Deletes all maneuvers.
 		/// </summary>
-		private void DeleteAll()
+		void DeleteAll ()
 		{
 			while (FlightGlobals.ActiveVessel.patchedConicSolver.maneuverNodes.Count > 0) {
-				FlightGlobals.ActiveVessel.patchedConicSolver.maneuverNodes[0].RemoveSelf ();
-			}			
+				FlightGlobals.ActiveVessel.patchedConicSolver.maneuverNodes [0].RemoveSelf ();
+			}
 		}
 		/// <summary>
 		/// Draw the main window.
 		/// </summary>
 		/// <param name="windowId">Window identifier.</param>
-		private void OnWindow(int windowId)
+		void OnWindow (int windowId)
 		{
 			if (FlightGlobals.ActiveVessel == null)
 				return;
 			PatchedConicSolver solver = FlightGlobals.ActiveVessel.patchedConicSolver;
-			GUILayout.BeginVertical (GUILayout.Width(320.0f));
+			GUILayout.BeginVertical (GUILayout.Width (320.0f));
 			GUILayout.BeginHorizontal ();
-			if (GUILayout.Button ("New",_buttonStyle) && IsAllowed()) {
-				_maneuver = solver.AddManeuverNode(Planetarium.GetUniversalTime() + (10.0 * 60.0));
+			if (GUILayout.Button ("New") && IsAllowed ()) {
+				_maneuver = solver.AddManeuverNode (Planetarium.GetUniversalTime () + (10.0 * 60.0));
 				_mindex = solver.maneuverNodes.IndexOf (_maneuver);
 			}
-			if (GUILayout.Button ("Delete",_buttonStyle) && _maneuver != null) {
+			if (GUILayout.Button ("Delete") && _maneuver != null) {
 				_maneuver.RemoveSelf ();
 			}
-			if (GUILayout.Button ("Delete All",_buttonStyle) && _maneuver != null) {
-				DeleteAll();
+			if (GUILayout.Button ("Delete All") && _maneuver != null) {
+				DeleteAll ();
 			}
-			if (GUILayout.Button ("Store",_buttonStyle) && solver.maneuverNodes.Count > 0) {
+			if (GUILayout.Button ("Store") && solver.maneuverNodes.Count > 0) {
 				StoredManeuver start = null;
 				StoredManeuver prev = null;
-				foreach (ManeuverNode node in solver.maneuverNodes)
-				{
-					StoredManeuver temp = new StoredManeuver(node.DeltaV, node.UT);
+				foreach (ManeuverNode node in solver.maneuverNodes) {
+					StoredManeuver temp = new StoredManeuver (node.DeltaV, node.UT);
 					if (start == null)
 						start = temp;
 					if (prev != null)
@@ -279,68 +302,68 @@ namespace Kartographer
 				}
 				_stored.Add (start);
 			}
-			if (GUILayout.Button ("Close",_buttonStyle)) {
-				_maneuverShow = false;
+			if (GUILayout.Button ("Close")) {
+				ToggleWindow ();
 			}
 			GUILayout.EndHorizontal ();
 
 			GUILayout.BeginHorizontal ();
-			GUILayout.Label ("Warp", _labelStyle);
-			if (GUILayout.Button ("+10m", _buttonStyle)) {
+			GUILayout.Label ("Warp");
+			if (GUILayout.Button ("+10m")) {
 				// Cancel any existing warp.
 				TimeWarp.SetRate (0, true);
 				// Warp to the maneuver.
-				TimeWarp.fetch.WarpTo (Planetarium.GetUniversalTime () + 10.0*Util.ONE_KMIN);
+				TimeWarp.fetch.WarpTo (Planetarium.GetUniversalTime () + 10.0 * Format.ONE_KMIN);
 			}
-			if (GUILayout.Button ("+1h", _buttonStyle)) {
+			if (GUILayout.Button ("+1h")) {
 				// Cancel any existing warp.
 				TimeWarp.SetRate (0, true);
 				// Warp to the maneuver.
-				TimeWarp.fetch.WarpTo (Planetarium.GetUniversalTime () + Util.ONE_KHOUR);
+				TimeWarp.fetch.WarpTo (Planetarium.GetUniversalTime () + Format.ONE_KHOUR);
 			}
-			if (GUILayout.Button ("+1d", _buttonStyle)) {
+			if (GUILayout.Button ("+1d")) {
 				// Cancel any existing warp.
 				TimeWarp.SetRate (0, true);
 				// Warp to the maneuver.
-				TimeWarp.fetch.WarpTo (Planetarium.GetUniversalTime () + Util.ONE_KDAY);
+				TimeWarp.fetch.WarpTo (Planetarium.GetUniversalTime () + Format.ONE_KDAY);
 			}
-			if (GUILayout.Button ("+10d", _buttonStyle)) {
+			if (GUILayout.Button ("+10d")) {
 				// Cancel any existing warp.
 				TimeWarp.SetRate (0, true);
 				// Warp to the maneuver.
-				TimeWarp.fetch.WarpTo (Planetarium.GetUniversalTime () + 10.0*Util.ONE_KDAY);
+				TimeWarp.fetch.WarpTo (Planetarium.GetUniversalTime () + 10.0 * Format.ONE_KDAY);
 			}
 			if (FlightGlobals.ActiveVessel.orbit.patchEndTransition != Orbit.PatchTransitionType.FINAL) {
-				if (GUILayout.Button ("Transition", _buttonStyle)) {
+				if (GUILayout.Button ("Transition")) {
 					// Cancel any existing warp.
 					TimeWarp.SetRate (0, true);
 					// Warp to the maneuver.
-					TimeWarp.fetch.WarpTo (FlightGlobals.ActiveVessel.orbit.EndUT - Util.ONE_KMIN);
+					TimeWarp.fetch.WarpTo (FlightGlobals.ActiveVessel.orbit.EndUT - Format.ONE_KMIN);
 				}
 			}
 			GUILayout.EndHorizontal ();
 
 			if (solver.maneuverNodes.Count > 0) {
 				if (_maneuver == null || _mvessel != FlightGlobals.ActiveVessel ||
-				    !solver.maneuverNodes.Contains (_maneuver)) {
+					!solver.maneuverNodes.Contains (_maneuver)) {
 					_maneuver = solver.maneuverNodes [0];
 					_mvessel = FlightGlobals.ActiveVessel;
 					_mindex = 0;
 				}
 				GUILayout.BeginHorizontal ();
 				GUILayout.Label ("Maneuver:" + (_mindex + 1) + " of " +
-					solver.maneuverNodes.Count, _labelStyle);
-				if (GUILayout.Button ("Next", _buttonStyle)) {
-					_mindex++;
-					if (_mindex >= solver.maneuverNodes.Count)
-						_mindex = 0;
-					_maneuver = solver.maneuverNodes [_mindex];
-					_mvessel = FlightGlobals.ActiveVessel;
-				}
-				if (GUILayout.Button ("Prev", _buttonStyle)) {
+					solver.maneuverNodes.Count);
+				if (GUILayout.Button ("Prev")) {
 					_mindex--;
 					if (_mindex < 0)
 						_mindex = solver.maneuverNodes.Count - 1;
+					_maneuver = solver.maneuverNodes [_mindex];
+					_mvessel = FlightGlobals.ActiveVessel;
+				}
+				if (GUILayout.Button ("Next")) {
+					_mindex++;
+					if (_mindex >= solver.maneuverNodes.Count)
+						_mindex = 0;
 					_maneuver = solver.maneuverNodes [_mindex];
 					_mvessel = FlightGlobals.ActiveVessel;
 				}
@@ -349,35 +372,35 @@ namespace Kartographer
 					double timeToNode = Planetarium.GetUniversalTime () - _maneuver.UT;
 					if (_mindex == 0) {
 						GUILayout.BeginHorizontal ();
-						GUILayout.Label ("Warp To Maneuver", _labelStyle);
-						if (GUILayout.Button ("-1m", _buttonStyle) && -timeToNode > Util.ONE_KMIN) {
+						GUILayout.Label ("Warp To Maneuver");
+						if (GUILayout.Button ("-1m") && -timeToNode > Format.ONE_KMIN) {
 							// Cancel any existing warp.
 							TimeWarp.SetRate (0, true);
 							// Warp to the maneuver.
-							TimeWarp.fetch.WarpTo (_maneuver.UT - Util.ONE_KMIN);
+							TimeWarp.fetch.WarpTo (_maneuver.UT - Format.ONE_KMIN);
 						}
-						if (GUILayout.Button ("-10m", _buttonStyle) && -timeToNode > 10.0 * Util.ONE_KMIN) {
+						if (GUILayout.Button ("-10m") && -timeToNode > 10.0 * Format.ONE_KMIN) {
 							// Cancel any existing warp.
 							TimeWarp.SetRate (0, true);
 							// Warp to the maneuver.
-							TimeWarp.fetch.WarpTo (_maneuver.UT - 10.0 * Util.ONE_KMIN);
+							TimeWarp.fetch.WarpTo (_maneuver.UT - 10.0 * Format.ONE_KMIN);
 						}
-						if (GUILayout.Button ("-1h", _buttonStyle) && -timeToNode > Util.ONE_KHOUR) {
+						if (GUILayout.Button ("-1h") && -timeToNode > Format.ONE_KHOUR) {
 							// Cancel any existing warp.
 							TimeWarp.SetRate (0, true);
 							// Warp to the maneuver.
-							TimeWarp.fetch.WarpTo (_maneuver.UT - Util.ONE_KHOUR);
+							TimeWarp.fetch.WarpTo (_maneuver.UT - Format.ONE_KHOUR);
 						}
 						GUILayout.EndHorizontal ();
 					} else {
-						GUILayout.Label ("Warp To Maneuver - Switch to first maneuver", _labelStyle);
+						GUILayout.Label ("Warp To Maneuver - Switch to first maneuver");
 					}
-					GUILayout.Label ("Time:" + KartographStyle.Instance.GetTimeString (timeToNode), _labelStyle);
-					GUILayout.Label ("Δv:" + KartographStyle.Instance.GetNumberString (_maneuver.DeltaV.magnitude) + "m/s", _labelStyle);
+					GUILayout.Label ("Time:" + Format.GetTimeString (timeToNode));
+					GUILayout.Label ("Δv:" + Format.GetNumberString (_maneuver.DeltaV.magnitude) + "m/s");
 
 					GUILayout.BeginHorizontal ();
-					_menuSelection = GUILayout.SelectionGrid (_menuSelection, 
-						new string[]{ ".01 m/s", ".1 m/s", "1 m/s", "10 m/s", "100 m/s", "1000 m/s" }, 3, _buttonStyle,
+					_menuSelection = GUILayout.SelectionGrid (_menuSelection,
+						new string [] { ".01 m/s", ".1 m/s", "1 m/s", "10 m/s", "100 m/s", "1000 m/s" }, 3,
 						GUILayout.MinWidth (300.0f));
 					if (_menuSelection == 0) {
 						_increment = 0.01d;
@@ -395,19 +418,19 @@ namespace Kartographer
 					GUILayout.EndHorizontal ();
 
 					GUILayout.BeginHorizontal ();
-					GUILayout.Label ("Prograde:" + KartographStyle.Instance.GetNumberString (_maneuver.DeltaV.z) + "m/s",
-						_labelStyle, GUILayout.MinWidth (200.0f));
-					if (GUILayout.Button ("+", _buttonStyle)) {
+					GUILayout.Label ("Prograde:" + Format.GetNumberString (_maneuver.DeltaV.z) + "m/s",
+						GUILayout.MinWidth (200.0f));
+					if (GUILayout.Button ("+")) {
 						Vector3d dv = _maneuver.DeltaV;
 						dv.z += _increment;
 						_maneuver.OnGizmoUpdated (dv, _maneuver.UT);
 					}
-					if (GUILayout.Button ("-", _buttonStyle)) {
+					if (GUILayout.Button ("-")) {
 						Vector3d dv = _maneuver.DeltaV;
 						dv.z -= _increment;
 						_maneuver.OnGizmoUpdated (dv, _maneuver.UT);
 					}
-					if (GUILayout.Button ("0", _buttonStyle)) {
+					if (GUILayout.Button ("0")) {
 						Vector3d dv = _maneuver.DeltaV;
 						dv.z = 0.0d;
 						_maneuver.OnGizmoUpdated (dv, _maneuver.UT);
@@ -415,19 +438,19 @@ namespace Kartographer
 					GUILayout.EndHorizontal ();
 
 					GUILayout.BeginHorizontal ();
-					GUILayout.Label ("Normal  :" + KartographStyle.Instance.GetNumberString (_maneuver.DeltaV.y) + "m/s",
-						_labelStyle, GUILayout.MinWidth (200.0f));
-					if (GUILayout.Button ("+", _buttonStyle)) {
+					GUILayout.Label ("Normal  :" + Format.GetNumberString (_maneuver.DeltaV.y) + "m/s",
+						GUILayout.MinWidth (200.0f));
+					if (GUILayout.Button ("+")) {
 						Vector3d dv = _maneuver.DeltaV;
 						dv.y += _increment;
 						_maneuver.OnGizmoUpdated (dv, _maneuver.UT);
 					}
-					if (GUILayout.Button ("-", _buttonStyle)) {
+					if (GUILayout.Button ("-")) {
 						Vector3d dv = _maneuver.DeltaV;
 						dv.y -= _increment;
 						_maneuver.OnGizmoUpdated (dv, _maneuver.UT);
 					}
-					if (GUILayout.Button ("0", _buttonStyle)) {
+					if (GUILayout.Button ("0")) {
 						Vector3d dv = _maneuver.DeltaV;
 						dv.y = 0.0d;
 						_maneuver.OnGizmoUpdated (dv, _maneuver.UT);
@@ -435,19 +458,19 @@ namespace Kartographer
 					GUILayout.EndHorizontal ();
 
 					GUILayout.BeginHorizontal ();
-					GUILayout.Label ("Radial  :" + KartographStyle.Instance.GetNumberString (_maneuver.DeltaV.x) + "m/s",
-						_labelStyle, GUILayout.MinWidth (200.0f));
-					if (GUILayout.Button ("+", _buttonStyle)) {
+					GUILayout.Label ("Radial  :" + Format.GetNumberString (_maneuver.DeltaV.x) + "m/s",
+						GUILayout.MinWidth (200.0f));
+					if (GUILayout.Button ("+")) {
 						Vector3d dv = _maneuver.DeltaV;
 						dv.x += _increment;
 						_maneuver.OnGizmoUpdated (dv, _maneuver.UT);
 					}
-					if (GUILayout.Button ("-", _buttonStyle)) {
+					if (GUILayout.Button ("-")) {
 						Vector3d dv = _maneuver.DeltaV;
 						dv.x -= _increment;
 						_maneuver.OnGizmoUpdated (dv, _maneuver.UT);
 					}
-					if (GUILayout.Button ("0", _buttonStyle)) {
+					if (GUILayout.Button ("0")) {
 						Vector3d dv = _maneuver.DeltaV;
 						dv.x = 0.0d;
 						_maneuver.OnGizmoUpdated (dv, _maneuver.UT);
@@ -461,20 +484,20 @@ namespace Kartographer
 					}
 
 					GUILayout.BeginHorizontal ();
-					if (GUILayout.Button ("=10min", _buttonStyle)) {
+					if (GUILayout.Button ("=10min")) {
 						_maneuver.OnGizmoUpdated (_maneuver.DeltaV, Planetarium.GetUniversalTime () + (10.0 * 60.0));
 					}
 					double period = _maneuver.patch.period;
-					if (GUILayout.Button ("+1 Orbit", _buttonStyle) && period > 0) {
+					if (GUILayout.Button ("+1 Orbit") && period > 0) {
 						_maneuver.OnGizmoUpdated (_maneuver.DeltaV, _maneuver.UT + period);
 					}
-					if (GUILayout.Button ("-1 Orbit", _buttonStyle) && period > 0 && -timeToNode > period) {
+					if (GUILayout.Button ("-1 Orbit") && period > 0 && -timeToNode > period) {
 						_maneuver.OnGizmoUpdated (_maneuver.DeltaV, _maneuver.UT - period);
 					}
-					if (GUILayout.Button ("+10 Orbit", _buttonStyle) && period > 0) {
+					if (GUILayout.Button ("+10 Orbit") && period > 0) {
 						_maneuver.OnGizmoUpdated (_maneuver.DeltaV, _maneuver.UT + (10.0 * period));
 					}
-					if (GUILayout.Button ("-10 Orbit", _buttonStyle) && period > 0 && -timeToNode > 10.0*period) {
+					if (GUILayout.Button ("-10 Orbit") && period > 0 && -timeToNode > 10.0 * period) {
 						_maneuver.OnGizmoUpdated (_maneuver.DeltaV, _maneuver.UT - (10.0 * period));
 					}
 					GUILayout.EndHorizontal ();
@@ -489,19 +512,5 @@ namespace Kartographer
 			GUILayout.EndVertical ();
 			GUI.DragWindow ();
 		}
-
-		/// <summary>
-		/// Initializes the styles.
-		/// </summary>
-		public void InitStyles()
-		{
-			_windowStyle = KartographStyle.Instance.Window;
-			_labelStyle = KartographStyle.Instance.Label;
-//			_centeredLabelStyle = KartographStyle.Instance.CenteredLabel;
-			_buttonStyle = KartographStyle.Instance.Button;
-			_scrollStyle = KartographStyle.Instance.ScrollView;
-			_toggleStyle = KartographStyle.Instance.Toggle;
-		}
-
 	}
 }

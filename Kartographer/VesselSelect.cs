@@ -3,45 +3,38 @@
  * This file is subject to the included LICENSE.md file. 
  */
 
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using KSP.IO;
 
 namespace Kartographer
 {
-	[KSPAddon(KSPAddon.Startup.Flight,false)]
-	public class VesselSelect: MonoBehaviour
+	[KSPAddonImproved (KSPAddonImproved.Startup.Flight, false)]
+	public class VesselSelect : MonoBehaviour
 	{
-		static private VesselSelect _instance;
-		static public VesselSelect Instance
-		{
+		static VesselSelect _instance;
+		static public VesselSelect Instance {
 			get { return _instance; }
 		}
-		private const double 	SAMPLE_TIME = 1.0d;
+		const double SAMPLE_TIME = 1.0d;
 
-		private Rect 		_windowPos = new Rect();
-		private Vector2		_scrollPos = new Vector2();
-		private GUIStyle 	_windowStyle;
-		private GUIStyle 	_labelStyle;
-		private GUIStyle 	_centeredLabelStyle;
-		private GUIStyle	_buttonStyle;
-		private GUIStyle	_scrollStyle;
-		private GUIStyle	_toggleStyle;
-		private int 		_winID;
-		private bool		_active = false;
-		private double 		_prevTime 		= 0.0d;
-		private bool 		_asteroids = false;
-		private bool 		_debris = false;
-		private Vessel 		_krakenSacrifice = null;
-		private int 		_krakenCountDown = 0;
-		private bool 		_krakenWarn = false;
-		private List<Vessel> _vessels = new List<Vessel>();
-		private VesselComparer.CompareType _vesselCmpr = VesselComparer.CompareType.DISTANCE;
-		private bool		_ascend = true;
+		Rect _windowPos = new Rect ();
+		Vector2 _scrollPos = new Vector2 ();
+		int _winID;
+		bool _active;
+		bool _hidden;
+		double _prevTime;
+		bool _asteroids;
+		bool _debris;
+		Vessel _krakenSacrifice;
+		int _krakenCountDown;
+		bool _krakenWarn;
+		List<Vessel> _vessels = new List<Vessel> ();
+		VesselComparer.CompareType _vesselCmpr = VesselComparer.CompareType.DISTANCE;
+		bool _ascend = true;
 
 
-		class VesselComparer: IComparer<Vessel>
+		class VesselComparer : IComparer<Vessel>
 		{
 			public enum CompareType
 			{
@@ -49,15 +42,15 @@ namespace Kartographer
 				MASS,
 				NAME
 			}
-			private CompareType _type;
-			private bool 		_ascend;
+			CompareType _type;
+			bool _ascend;
 
 			/// <summary>
-			/// Initializes a new instance of the <see cref="Kartographer.VesselSelect+VesselComparer"/> class.
+			/// Initializes a new instance of the <see cref="T:Kartographer.VesselSelect.VesselComparer"/> class.
 			/// </summary>
-			/// <param name="ascend">If set to <c>true</c> sort ascending order.</param>
-			/// <param name="type">Type of sorting.</param>
-			public VesselComparer(bool ascend = true, CompareType type=CompareType.DISTANCE)
+			/// <param name="ascend">If set to <c>true</c> ascend.</param>
+			/// <param name="type">Type.</param>
+			public VesselComparer (bool ascend = true, CompareType type = CompareType.DISTANCE)
 			{
 				_type = type;
 				_ascend = ascend;
@@ -68,7 +61,7 @@ namespace Kartographer
 			/// </summary>
 			/// <param name="x">The x vessel.</param>
 			/// <param name="y">The y vessel.</param>
-			public int Compare(Vessel x, Vessel y)
+			public int Compare (Vessel x, Vessel y)
 			{
 				if (!_ascend) {
 					Vessel tmp = y;
@@ -76,8 +69,7 @@ namespace Kartographer
 					x = tmp;
 				}
 				switch (_type) {
-				case CompareType.DISTANCE:
-					{
+				case CompareType.DISTANCE: {
 						Vessel vessel = FlightGlobals.ActiveVessel;
 						double distancex = Vector3.Distance (x.transform.position, vessel.transform.position);
 						double distancey = Vector3.Distance (y.transform.position, vessel.transform.position);
@@ -93,7 +85,8 @@ namespace Kartographer
 		}
 
 
-		public void Awake() {
+		public void Awake ()
+		{
 			if (_instance)
 				Destroy (_instance);
 			_instance = this;
@@ -102,48 +95,63 @@ namespace Kartographer
 		/// <summary>
 		/// Start this instance.
 		/// </summary>
-		public void Start()
+		public void Start ()
 		{
 			_winID = GUIUtility.GetControlID (FocusType.Passive);
-//			Debug.Log ("Vessel Select Start");
+
 			PluginConfiguration config = PluginConfiguration.CreateForType<KartographSettings> ();
 			config.load ();
-			_windowPos = config.GetValue<Rect> ("VesselWindowPos",new Rect());
+			_windowPos = config.GetValue ("VesselWindowPos", new Rect (new Vector2 (Screen.width / 2, Screen.height / 2), Vector2.zero));
 
-			_windowPos.width = 0.0f;
-			_windowPos.height = 0.0f;
-
-			_krakenWarn = config.GetValue<bool> ("KrakenWarn",false);
+			_krakenWarn = config.GetValue ("KrakenWarn", false);
 
 			GameEvents.onVesselDestroy.Add (VesselDestroyed);
-			InitStyles ();
+			GameEvents.onHideUI.Add (Hide);
+			GameEvents.onShowUI.Add (UnHide);
+			GameEvents.onGamePause.Add (Hide);
+			GameEvents.onGameUnpause.Add (UnHide);
 		}
 
 		/// <summary>
 		/// Callback for object destruction.
 		/// </summary>
-		public void OnDestroy()
+		public void OnDestroy ()
 		{
-//			RenderingManager.RemoveFromPostDrawQueue (0, OnDraw);
 			PluginConfiguration config = PluginConfiguration.CreateForType<KartographSettings> ();
 			config.load ();
-			config.SetValue ("VesselWindowPos",_windowPos);
+			config.SetValue ("VesselWindowPos", _windowPos);
 			config.SetValue ("KrakenWarn", _krakenWarn);
 			config.save ();
 
 			GameEvents.onVesselDestroy.Remove (VesselDestroyed);
+			GameEvents.onHideUI.Remove (Hide);
+			GameEvents.onShowUI.Remove (UnHide);
+			GameEvents.onGamePause.Remove (Hide);
+			GameEvents.onGameUnpause.Remove (UnHide);
 
 			if (_instance == this)
 				_instance = null;
 		}
 
-		public void OnGUI()
+		public void Hide ()
 		{
-			if (_active) {
-				_windowPos = GUILayout.Window (_winID, _windowPos, OnWindow, "Vessel Select", _windowStyle);
-				if (_windowPos.x == 0.0f && _windowPos.y == 0.0f) {
-					_windowPos.y = Screen.height * 0.5f - Math.Max(_windowPos.height * 0.5f,150.0f);
-					_windowPos.x = Screen.width * 0.5f - _windowPos.width * 0.5f;
+			_hidden = true;
+		}
+
+		public void UnHide ()
+		{
+			_hidden = false;
+		}
+
+		public void OnGUI ()
+		{
+			if (_active && !_hidden) {
+				if (KartographSettings.Instance.UseKspSkin) GUI.skin = HighLogic.Skin;
+				_windowPos = GUILayout.Window (_winID, _windowPos, OnWindow, "Vessel Select");
+				if (_windowPos.Contains (Event.current.mousePosition)) {
+					ControlLock ();
+				} else {
+					ControlUnlock ();
 				}
 			}
 		}
@@ -151,17 +159,31 @@ namespace Kartographer
 		/// <summary>
 		/// Toggles window visibility.
 		/// </summary>
-		public void ToggleWindow()
+		internal void ToggleWindow ()
 		{
 			_active = !_active;
-			if (_active) {
-//				RenderingManager.AddToPostDrawQueue (0, OnDraw);
-			} else {
-//				RenderingManager.RemoveFromPostDrawQueue (0, OnDraw);
-			}
+			if (!_active) ControlUnlock ();
+			_windowPos.width = 0.0f;
+			_windowPos.height = 0.0f;
 		}
 
-		public bool IsUsable()
+		/// <summary>
+		/// Lock the Controls.
+		/// </summary>
+		void ControlLock ()
+		{
+			InputLockManager.SetControlLock (ControlTypes.ALLBUTTARGETING, "Kartographer" + name);
+		}
+
+		/// <summary>
+		/// Unlock the Controls.
+		/// </summary>
+		void ControlUnlock ()
+		{
+			InputLockManager.RemoveControlLock ("Kartographer" + name);
+		}
+
+		public bool IsUsable ()
 		{
 			return true;
 		}
@@ -170,7 +192,7 @@ namespace Kartographer
 		/// Callback when a vessel is destroyed.
 		/// </summary>
 		/// <param name="vessel">Vessel.</param>
-		public void VesselDestroyed(Vessel vessel)
+		public void VesselDestroyed (Vessel vessel)
 		{
 			_prevTime = 0.0d;
 		}
@@ -178,11 +200,11 @@ namespace Kartographer
 		/// <summary>
 		/// Called on physics update. Set the Distances.
 		/// </summary>
-		public void FixedUpdate()
+		public void FixedUpdate ()
 		{
 			double time = Planetarium.GetUniversalTime ();
 
-			if (!_active || HighLogic.LoadedSceneIsEditor || time - _prevTime < SAMPLE_TIME) {
+			if (!_active || time - _prevTime < SAMPLE_TIME) {
 				return;
 			}
 
@@ -202,12 +224,12 @@ namespace Kartographer
 
 				if (_krakenCountDown == 0) {
 					int count = _krakenSacrifice.parts.Count;
-					Part part = _krakenSacrifice.parts [UnityEngine.Random.Range (0, count - 1)];
+					Part part = _krakenSacrifice.parts [Random.Range (0, count - 1)];
 					while (part.children.Count > 0) {
-						part = part.children [UnityEngine.Random.Range (0, part.children.Count - 1)];
+						part = part.children [Random.Range (0, part.children.Count - 1)];
 					}
 					part.explode ();
-					_krakenCountDown = UnityEngine.Random.Range(2, 10);
+					_krakenCountDown = Random.Range (2, 10);
 				} else {
 					_krakenCountDown--;
 				}
@@ -222,25 +244,25 @@ namespace Kartographer
 		/// Draws the window.
 		/// </summary>
 		/// <param name="windowId">Window identifier.</param>
-		private void OnWindow(int windowId)
+		void OnWindow (int windowId)
 		{
 			GUILayout.BeginVertical ();
 			if (FlightGlobals.ActiveVessel != null) {
-				GUILayout.Label (FlightGlobals.ActiveVessel.RevealName (), _centeredLabelStyle);
+				GUILayout.Label (FlightGlobals.ActiveVessel.RevealName ()/*, _centeredLabelStyle*/);
 			}
-			_asteroids = GUILayout.Toggle (_asteroids, "Include Asteroids", _toggleStyle);
-			_debris = GUILayout.Toggle (_debris, "Include Debris", _toggleStyle);
+			_asteroids = GUILayout.Toggle (_asteroids, "Include Asteroids");
+			_debris = GUILayout.Toggle (_debris, "Include Debris");
 
-			GUILayout.BeginHorizontal (GUILayout.MinWidth(420.0f));
-			if (GUILayout.Button ("Name", _buttonStyle,GUILayout.MinWidth(100.0f))) {
-				if (_vesselCmpr ==  VesselComparer.CompareType.NAME)
+			GUILayout.BeginHorizontal (GUILayout.MinWidth (420.0f));
+			if (GUILayout.Button ("Name", GUILayout.MinWidth (100.0f))) {
+				if (_vesselCmpr == VesselComparer.CompareType.NAME)
 					_ascend = !_ascend;
 				else
 					_ascend = true;
 				_vesselCmpr = VesselComparer.CompareType.NAME;
 				_prevTime = 0.0d;
 			}
-			if (GUILayout.Button ("Distance", _buttonStyle,GUILayout.MinWidth(100.0f))) {
+			if (GUILayout.Button ("Distance", GUILayout.MinWidth (100.0f))) {
 				if (_vesselCmpr == VesselComparer.CompareType.DISTANCE)
 					_ascend = !_ascend;
 				else
@@ -250,17 +272,17 @@ namespace Kartographer
 			}
 			GUILayout.EndHorizontal ();
 
-			_scrollPos = GUILayout.BeginScrollView (_scrollPos, _scrollStyle, GUILayout.MinWidth (420.0f), GUILayout.Height (200.0f));
+			_scrollPos = GUILayout.BeginScrollView (_scrollPos, GUILayout.MinWidth (420.0f), GUILayout.Height (200.0f));
 			Vessel vessel = FlightGlobals.ActiveVessel;
 			foreach (Vessel v in _vessels) {
 				string desc = "";
-				if (v.vesselType == VesselType.Debris  && !_debris) {
+				if (v.vesselType == VesselType.Debris && !_debris) {
 					continue;
 				}
-				if (v.vesselType == VesselType.SpaceObject  && !_asteroids) {
+				if (v.vesselType == VesselType.SpaceObject && !_asteroids) {
 					continue;
 				}
-				if (v.vesselType == VesselType.SpaceObject  && v.DiscoveryInfo.Level < DiscoveryLevels.Name) {
+				if (v.vesselType == VesselType.SpaceObject && v.DiscoveryInfo.Level < DiscoveryLevels.Name) {
 					continue;
 				}
 				if (v.vesselType == VesselType.Flag) {
@@ -268,17 +290,17 @@ namespace Kartographer
 				}
 
 				GUILayout.BeginHorizontal ();
-				GUILayout.Label (desc+v.RevealName (), _labelStyle,GUILayout.MinWidth(150.0f));
+				GUILayout.Label (desc + v.RevealName (), GUILayout.MinWidth (150.0f));
 
 				double distance = 0.0d;
 				if (vessel != null) {
 					distance = Vector3.Distance (v.transform.position, vessel.transform.position);
-					GUILayout.Label (KartographStyle.Instance.GetNumberString (distance) + "m", _labelStyle, GUILayout.MinWidth (100.0f));
+					GUILayout.Label (Format.GetNumberString (distance) + "m", GUILayout.MinWidth (100.0f));
 				}
-				if (GUILayout.Button("Target",_buttonStyle)) {
+				if (GUILayout.Button ("Target")) {
 					FlightGlobals.fetch.SetVesselTarget (v);
 				}
-				if (GUILayout.Button ("Switch", _buttonStyle)) {
+				if (GUILayout.Button ("Switch")) {
 					FlightGlobals.SetActiveVessel (v);
 				}
 
@@ -286,13 +308,7 @@ namespace Kartographer
 			}
 			GUILayout.EndScrollView ();
 			GUILayout.BeginHorizontal ();
-			if (GUILayout.Button ("Close", _buttonStyle)) {
-				ToggleWindow ();
-			}
-			if (GUILayout.Button ("Untarget", _buttonStyle)) {
-				FlightGlobals.fetch.SetVesselTarget (null);
-			}
-			if (!KartographSettings.Instance.DisableKraken && GUILayout.Button ("Unleash the Kraken", _buttonStyle)) {
+			if (!KartographSettings.Instance.DisableKraken && GUILayout.Button ("Unleash the Kraken")) {
 				if (_krakenWarn) {
 					_krakenSacrifice = FlightGlobals.ActiveVessel;
 				} else {
@@ -300,23 +316,15 @@ namespace Kartographer
 					_krakenWarn = true;
 				}
 			}
+			if (GUILayout.Button ("Untarget")) {
+				FlightGlobals.fetch.SetVesselTarget (null);
+			}
+			if (GUILayout.Button ("Close")) {
+				ToggleWindow ();
+			}
 			GUILayout.EndHorizontal ();
 			GUILayout.EndVertical ();
 			GUI.DragWindow ();
 		}
-
-		/// <summary>
-		/// Initializes the styles.
-		/// </summary>
-		public void InitStyles()
-		{
-			_windowStyle 	= KartographStyle.Instance.Window;
-			_labelStyle 	= KartographStyle.Instance.Label;
-			_centeredLabelStyle = KartographStyle.Instance.CenteredLabel;
-			_buttonStyle 	= KartographStyle.Instance.Button;
-			_scrollStyle 	= KartographStyle.Instance.ScrollView;
-			_toggleStyle 	= KartographStyle.Instance.Toggle;
-		}
 	}
 }
-

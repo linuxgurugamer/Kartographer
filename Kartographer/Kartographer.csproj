@@ -58,26 +58,22 @@
     <Reference Include="UnityEngine">
       <HintPath>..\..\KSP\KSP_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
-    <Reference Include="Assembly-CSharp-firstpass">
-      <HintPath>..\..\KSP\KSP_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UI">
-      <HintPath>..\..\KSP\KSP_Data\Managed\UnityEngine.UI.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="AppLauncher.cs" />
-    <Compile Include="FocusSelect.cs" />
     <Compile Include="KartographSettings.cs" />
-    <Compile Include="KartographStyle.cs" />
-    <Compile Include="KSPAddonImproved.cs" />
     <Compile Include="ManeuverEditor.cs" />
     <Compile Include="TimeControl.cs" />
-    <Compile Include="ToolbarWrapper.cs" />
-    <Compile Include="Util.cs" />
     <Compile Include="VesselSelect.cs" />
     <Compile Include="WarpTo.cs" />
+    <Compile Include="Utils\Format.cs" />
+    <Compile Include="Utils\ToolbarWrapper.cs" />
+    <Compile Include="Utils\KSPAddonImproved.cs" />
+    <Compile Include="CelestialBodyData.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Utils\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSHARP.Targets" />
   <ProjectExtensions>
