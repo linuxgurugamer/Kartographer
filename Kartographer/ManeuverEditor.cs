@@ -118,6 +118,7 @@ namespace Kartographer
 
 		public void Hide ()
 		{
+			ControlUnlock ();
 			_hidden = true;
 		}
 
@@ -248,7 +249,7 @@ namespace Kartographer
 					double timeToNode = Planetarium.GetUniversalTime () - stored.UT;
 					GUILayout.Label ("", GUILayout.Width (15.0f));
 
-					GUILayout.Label (" " + Format.GetTimeString (timeToNode), GUILayout.Width (200.0f));
+					GUILayout.Label (" " + KSPUtil.dateTimeFormatter.PrintDateDeltaCompact (timeToNode, true, true, true), GUILayout.Width (200.0f));
 					GUILayout.EndHorizontal ();
 					i++;
 				}
@@ -395,7 +396,7 @@ namespace Kartographer
 					} else {
 						GUILayout.Label ("Warp To Maneuver - Switch to first maneuver");
 					}
-					GUILayout.Label ("Time:" + Format.GetTimeString (timeToNode));
+					GUILayout.Label ("Time:" + KSPUtil.dateTimeFormatter.PrintDateDeltaCompact (timeToNode, true, true, true));
 					GUILayout.Label ("Δv:" + Format.GetNumberString (_maneuver.DeltaV.magnitude) + "m/s");
 
 					GUILayout.BeginHorizontal ();
@@ -420,11 +421,6 @@ namespace Kartographer
 					GUILayout.BeginHorizontal ();
 					GUILayout.Label ("Prograde:" + Format.GetNumberString (_maneuver.DeltaV.z) + "m/s",
 						GUILayout.MinWidth (200.0f));
-					if (GUILayout.Button ("+")) {
-						Vector3d dv = _maneuver.DeltaV;
-						dv.z += _increment;
-						_maneuver.OnGizmoUpdated (dv, _maneuver.UT);
-					}
 					if (GUILayout.Button ("-")) {
 						Vector3d dv = _maneuver.DeltaV;
 						dv.z -= _increment;
@@ -435,16 +431,16 @@ namespace Kartographer
 						dv.z = 0.0d;
 						_maneuver.OnGizmoUpdated (dv, _maneuver.UT);
 					}
+					if (GUILayout.Button ("+")) {
+						Vector3d dv = _maneuver.DeltaV;
+						dv.z += _increment;
+						_maneuver.OnGizmoUpdated (dv, _maneuver.UT);
+					}
 					GUILayout.EndHorizontal ();
 
 					GUILayout.BeginHorizontal ();
 					GUILayout.Label ("Normal  :" + Format.GetNumberString (_maneuver.DeltaV.y) + "m/s",
 						GUILayout.MinWidth (200.0f));
-					if (GUILayout.Button ("+")) {
-						Vector3d dv = _maneuver.DeltaV;
-						dv.y += _increment;
-						_maneuver.OnGizmoUpdated (dv, _maneuver.UT);
-					}
 					if (GUILayout.Button ("-")) {
 						Vector3d dv = _maneuver.DeltaV;
 						dv.y -= _increment;
@@ -455,16 +451,16 @@ namespace Kartographer
 						dv.y = 0.0d;
 						_maneuver.OnGizmoUpdated (dv, _maneuver.UT);
 					}
+					if (GUILayout.Button ("+")) {
+						Vector3d dv = _maneuver.DeltaV;
+						dv.y += _increment;
+						_maneuver.OnGizmoUpdated (dv, _maneuver.UT);
+					}
 					GUILayout.EndHorizontal ();
 
 					GUILayout.BeginHorizontal ();
 					GUILayout.Label ("Radial  :" + Format.GetNumberString (_maneuver.DeltaV.x) + "m/s",
 						GUILayout.MinWidth (200.0f));
-					if (GUILayout.Button ("+")) {
-						Vector3d dv = _maneuver.DeltaV;
-						dv.x += _increment;
-						_maneuver.OnGizmoUpdated (dv, _maneuver.UT);
-					}
 					if (GUILayout.Button ("-")) {
 						Vector3d dv = _maneuver.DeltaV;
 						dv.x -= _increment;
@@ -473,6 +469,11 @@ namespace Kartographer
 					if (GUILayout.Button ("0")) {
 						Vector3d dv = _maneuver.DeltaV;
 						dv.x = 0.0d;
+						_maneuver.OnGizmoUpdated (dv, _maneuver.UT);
+					}
+					if (GUILayout.Button ("+")) {
+						Vector3d dv = _maneuver.DeltaV;
+						dv.x += _increment;
 						_maneuver.OnGizmoUpdated (dv, _maneuver.UT);
 					}
 					GUILayout.EndHorizontal ();
@@ -488,17 +489,17 @@ namespace Kartographer
 						_maneuver.OnGizmoUpdated (_maneuver.DeltaV, Planetarium.GetUniversalTime () + (10.0 * 60.0));
 					}
 					double period = _maneuver.patch.period;
-					if (GUILayout.Button ("+1 Orbit") && period > 0) {
-						_maneuver.OnGizmoUpdated (_maneuver.DeltaV, _maneuver.UT + period);
+					if (GUILayout.Button ("-10 Orbit") && period > 0 && -timeToNode > 10.0 * period) {
+						_maneuver.OnGizmoUpdated (_maneuver.DeltaV, _maneuver.UT - (10.0 * period));
 					}
 					if (GUILayout.Button ("-1 Orbit") && period > 0 && -timeToNode > period) {
 						_maneuver.OnGizmoUpdated (_maneuver.DeltaV, _maneuver.UT - period);
 					}
+					if (GUILayout.Button ("+1 Orbit") && period > 0) {
+						_maneuver.OnGizmoUpdated (_maneuver.DeltaV, _maneuver.UT + period);
+					}
 					if (GUILayout.Button ("+10 Orbit") && period > 0) {
 						_maneuver.OnGizmoUpdated (_maneuver.DeltaV, _maneuver.UT + (10.0 * period));
-					}
-					if (GUILayout.Button ("-10 Orbit") && period > 0 && -timeToNode > 10.0 * period) {
-						_maneuver.OnGizmoUpdated (_maneuver.DeltaV, _maneuver.UT - (10.0 * period));
 					}
 					GUILayout.EndHorizontal ();
 				} else {

@@ -88,6 +88,7 @@ namespace Kartographer
 
 		public void Hide ()
 		{
+			ControlUnlock ();
 			_hidden = true;
 		}
 

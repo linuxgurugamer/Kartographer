@@ -14,9 +14,10 @@ namespace Kartographer
 
 		const int MAX_TIME_GRAN = 2;
 
-		double _UT = 0.0d;
+		double _UT;
 		int _timeGranularity = 1;
-		int _menuSelection = 0;
+		int _menuSelection;
+		string [] buttonTexts = { "Time Controls", "Orbit Events" };
 
 		public TimeControl ()
 		{
@@ -86,8 +87,7 @@ namespace Kartographer
 				GUILayout.Label ("Time Controls");
 				DrawTimeControls ();
 			} else {
-				_menuSelection = GUILayout.SelectionGrid (_menuSelection,
-					new string [] { "Time Controls", "Orbit Events" }, 3);
+				_menuSelection = GUILayout.SelectionGrid (_menuSelection, buttonTexts, 2);
 				if (_menuSelection == 0) {
 					DrawTimeControls ();
 				} else {

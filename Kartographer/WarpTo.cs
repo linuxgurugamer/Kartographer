@@ -77,6 +77,7 @@ namespace Kartographer
 
 		public void Hide ()
 		{
+			ControlUnlock ();
 			_hidden = true;
 		}
 
@@ -149,9 +150,9 @@ namespace Kartographer
 		void OnWindow (int windowId)
 		{
 			GUILayout.BeginVertical (GUILayout.MinWidth (300.0f));
-			GUILayout.Label ("Current Time: " + Format.GetUTTimeString (Planetarium.GetUniversalTime ()));
-			GUILayout.Label ("Warp To:      " + Format.GetUTTimeString (_UT));
-			GUILayout.Label ("Delta Time:   " + Format.GetTimeString (_UT - Planetarium.GetUniversalTime ()));
+			GUILayout.Label ("Current Time: " + KSPUtil.dateTimeFormatter.PrintDateCompact (Planetarium.GetUniversalTime (), true, true));
+			GUILayout.Label ("Warp To:      " + KSPUtil.dateTimeFormatter.PrintDateCompact (_UT, true, true));
+			GUILayout.Label ("Delta Time:   " + KSPUtil.dateTimeFormatter.PrintDateDeltaCompact (_UT - Planetarium.GetUniversalTime (), true, true, true));
 			if (_UT < Planetarium.GetUniversalTime ()) {
 				_UT = Planetarium.GetUniversalTime ();
 			}

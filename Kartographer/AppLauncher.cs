@@ -26,7 +26,7 @@ namespace Kartographer
 		Rect _windowPos;
 		int _winID;
 		float _autoHideTime;
-		public ApplicationLauncherButton _toolbarButton;
+		ApplicationLauncherButton _toolbarButton;
 		IButton _altToolbarButton;
 
 		/// <summary>
@@ -51,9 +51,6 @@ namespace Kartographer
 			_windowPos = config.GetValue ("AppLaunchPos", new Rect (new Vector2 (Screen.width / 2, Screen.height / 2), Vector2.zero));
 
 			GameEvents.onGUIApplicationLauncherReady.Add (OnAppLaunchReady);
-			GameEvents.onGameSceneSwitchRequested.Add (OnSceneChange);
-			GameEvents.OnMapEntered.Add (Resize);
-			GameEvents.OnMapExited.Add (Resize);
 			GameEvents.onHideUI.Add (Hide);
 			GameEvents.onShowUI.Add (UnHide);
 			GameEvents.onGamePause.Add (Hide);
@@ -75,9 +72,6 @@ namespace Kartographer
 			DestroyButtons ();
 
 			GameEvents.onGUIApplicationLauncherReady.Remove (OnAppLaunchReady);
-			GameEvents.onGameSceneSwitchRequested.Remove (OnSceneChange);
-			GameEvents.OnMapEntered.Remove (Resize);
-			GameEvents.OnMapExited.Remove (Resize);
 			GameEvents.onHideUI.Remove (Hide);
 			GameEvents.onShowUI.Remove (UnHide);
 			GameEvents.onGamePause.Remove (Hide);
@@ -89,6 +83,7 @@ namespace Kartographer
 
 		public void Hide ()
 		{
+			ControlUnlock ();
 			_hidden = true;
 		}
 
@@ -102,34 +97,12 @@ namespace Kartographer
 			if (_active && !_hidden) {
 				if (KartographSettings.Instance.UseKspSkin) GUI.skin = HighLogic.Skin;
 				_windowPos = GUILayout.Window (_winID, _windowPos, OnWindow, "Kartograher");
-				if ((_windowPos.x == 0.0f && _windowPos.y == 0.0f) || _windowPos.yMax > Screen.height) {
-					if (_toolbarButton != null) {
-						Vector3 toolPos = Camera.current.WorldToScreenPoint (_toolbarButton.GetAnchor ());
-						_windowPos.x = toolPos.x - _windowPos.width * 0.5f;
-						_windowPos.y = (Screen.height - toolPos.y);
-						if (!ApplicationLauncher.Instance.IsPositionedAtTop) {
-							_windowPos.y -= _windowPos.height;
-						}
-					}
-				}
-				if (_windowPos.xMax + 5.0f > Screen.width) {
-					_windowPos.x -= _windowPos.xMax - Screen.width - 5.0f;
-				}
 				if (_windowPos.Contains (Event.current.mousePosition)) {
 					ControlLock ();
 				} else {
 					ControlUnlock ();
 				}
 			}
-		}
-
-		/// <summary>
-		/// Callback when the scene changes.
-		/// </summary>
-		/// <param name="evt">Evt.</param>
-		public void OnSceneChange (GameEvents.FromToAction<GameScenes, GameScenes> evt)
-		{
-			Resize ();
 		}
 
 		/// <summary>
@@ -167,6 +140,7 @@ namespace Kartographer
 		{
 			if (_toolbarButton != null) {
 				ApplicationLauncher.Instance.RemoveModApplication (_toolbarButton);
+				_toolbarButton = null;
 			}
 			if (_altToolbarButton != null) {
 				_altToolbarButton.Destroy ();
@@ -180,26 +154,17 @@ namespace Kartographer
 		public void noOp () { }
 
 		/// <summary>
-		/// Force a window resize.
-		/// </summary>
-		public void Resize ()
-		{
-			_windowPos.height = 0.0f;
-		}
-
-		/// <summary>
 		/// Toggles the window.
 		/// </summary>
 		internal void ToggleWindow ()
 		{
-			if (_active) {
-				_active = false;
+			_active = !_active;
+			if (!_active) {
 				_autoHideTime = 0.0f;
 				ControlUnlock ();
 			} else {
 				_windowPos.width = 0.0f;
 				_windowPos.height = 0.0f;
-				_active = true;
 			}
 		}
 
@@ -225,6 +190,8 @@ namespace Kartographer
 				_active && !_windowPos.Contains (Event.current.mousePosition)) {
 				if (_toolbarButton != null)
 					_toolbarButton.SetFalse ();
+				else
+					ToggleWindow ();
 			}
 		}
 

@@ -117,6 +117,8 @@ namespace Kartographer
 		/// </summary>
 		public void OnDestroy ()
 		{
+			ControlUnlock ();
+
 			PluginConfiguration config = PluginConfiguration.CreateForType<KartographSettings> ();
 			config.load ();
 			config.SetValue ("VesselWindowPos", _windowPos);
@@ -135,6 +137,7 @@ namespace Kartographer
 
 		public void Hide ()
 		{
+			ControlUnlock ();
 			_hidden = true;
 		}
 

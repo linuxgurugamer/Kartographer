@@ -24,63 +24,22 @@ namespace Kartographer
 		internal static string GetNumberString (double value)
 		{
 			string unit = " ";
-			if (value > 1e12d || (value < 1e-2d && value > 0.0d)) {
+			if (value > 1e18d || (value < 1e-2d && value > 0.0d)) {
 				return value.ToString ("e6") + unit;
-			} else if (value > 1e7d) {
+			} else if (value > 1e15d) {
+				unit = " P";
+			} else if (value > 1e12d) {
+				unit = " T";
+			} else if (value > 1e9d) {
+				unit = " G";
+			} else if (value > 1e6d) {
 				unit = " M";
 				value /= 1e6d;
-			} else if (value > 1e4d) {
+			} else if (value > 1e3d) {
 				unit = " k";
 				value /= 1e3d;
 			}
-			string result = value.ToString ("N2") + unit;
-			return result;
-		}
-
-		/// <summary>
-		/// Gets the time string.
-		/// </summary>
-		/// <returns>The time string.</returns>
-		/// <param name="value">Value.</param>
-		internal static string GetUTTimeString (double value)
-		{
-			return GetTimeString (value + ONE_KYEAR + ONE_KDAY);
-		}
-
-		/// <summary>
-		/// Gets the time string.
-		/// </summary>
-		/// <returns>The time string.</returns>
-		/// <param name="value">Value.</param>
-		internal static string GetTimeString (double value)
-		{
-			string result = "";
-			if (value < 0.0) {
-				result += "-";
-				value = Math.Abs (value);
-			}
-			if (value > ONE_KYEAR) {
-				int years = (int)value / (int)ONE_KYEAR;
-				value -= (years * ONE_KYEAR);
-				result += years + " y,";
-			}
-			if (value > ONE_KDAY) {
-				int days = (int)value / ((int)ONE_KDAY);
-				value -= days * ONE_KDAY;
-				result += days + " d,";
-			}
-			if (value > ONE_KHOUR) {
-				int hours = (int)value / ((int)ONE_KHOUR);
-				value -= hours * ONE_KHOUR;
-				result += hours + " h,";
-			}
-
-			if (value > ONE_KMIN) {
-				int mins = (int)value / 60;
-				value -= mins * 60;
-				result += mins + " m,";
-			}
-			result += value.ToString ("N2") + " s";
+			string result = value.ToString ("N3") + unit;
 			return result;
 		}
 	}

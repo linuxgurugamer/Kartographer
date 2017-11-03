@@ -84,6 +84,7 @@ namespace Kartographer
 
 		public void Hide ()
 		{
+			ControlUnlock ();
 			_hidden = true;
 		}
 
@@ -130,26 +131,26 @@ namespace Kartographer
 			GUILayout.BeginHorizontal ();
 			RenderBodyList ();
 			if (_body != null) {
+				GUILayout.Space (10);
 				RenderBodyStats ();
+				GUILayout.Space (10);
 				RenderBodyOrbitStats ();
 			}
 			GUILayout.EndHorizontal ();
-			if (GUILayout.Button ("Close")) {
-				ToggleWindow ();
-			}
 			GUI.DragWindow ();
 		}
 
 		void RenderBodyList ()
 		{
-			CelestialBody sun = PSystemManager.Instance.sun.sun;
-			// Create with the sun intially expanded
-			if (!_expanded.ContainsKey (sun)) {
-				_expanded.Add (sun, true);
+			//CelestialBody sun = PSystemManager.Instance.sun.sun;
+			CelestialBody centralBody = FlightGlobals.Bodies [0];
+			// Create with the central body intially expanded
+			if (!_expanded.ContainsKey (centralBody)) {
+				_expanded.Add (centralBody, true);
 			}
-			GUILayout.BeginVertical (GUILayout.MinWidth (250.0f));
+			GUILayout.BeginVertical (GUILayout.MinWidth (300.0f));
 			_scrollPos = GUILayout.BeginScrollView (_scrollPos, GUILayout.Height (300.0f));
-			DrawCelestialBodyGUI (sun, 0);
+			DrawCelestialBodyGUI (centralBody, 0);
 			GUILayout.EndScrollView ();
 			GUILayout.BeginHorizontal ();
 			if (GUILayout.Button ("View")) {
@@ -165,6 +166,9 @@ namespace Kartographer
 				}
 			}
 			GUILayout.EndHorizontal ();
+			if (GUILayout.Button ("Close")) {
+				ToggleWindow ();
+			}
 			GUILayout.EndVertical ();
 		}
 
@@ -186,11 +190,13 @@ namespace Kartographer
 					_expanded [body] = !(_expanded [body]);
 				}
 			}
-			if (GUILayout.Button (body.RevealName ())) {
+			if (_body == body) GUI.contentColor = Color.yellow;
+			if (GUILayout.Button (body.displayName.Replace ("^N", ""))) { //??????
 				_body = body;
 				_windowPos.height = 0.0f;
 				_windowPos.width = 0.0f;
 			}
+			GUI.contentColor = Color.white;
 			GUILayout.EndHorizontal ();
 			if (_expanded [body]) {
 				foreach (CelestialBody child in body.orbitingBodies) {
@@ -202,16 +208,16 @@ namespace Kartographer
 		void RenderBodyStats ()
 		{
 			GUILayout.BeginVertical (GUILayout.Width (250));
-			GUILayout.Label ("Celestial Body: " + _body.RevealName ());
+			GUILayout.Label ("Celestial Body: " + _body.displayName.Replace ("^N", ""));
 			GUILayout.Label ("Surface Gravity: " +
 							 (_body.gMagnitudeAtCenter / (Math.Pow (_body.Radius, 2))).ToString ("G3") + " m/s²");
 			GUILayout.Label ("Mass: " + Format.GetNumberString (_body.Mass) + "g");
 			GUILayout.Label ("GM (μ): " + _body.gravParameter.ToString ("e6") + " m³/s²");
 			GUILayout.Label ("Radius: " + Format.GetNumberString (_body.Radius) + "m");
-			GUILayout.Label ("Rotation Period: " + Format.GetTimeString (_body.rotationPeriod));
+			GUILayout.Label ("Rotation Period: " + KSPUtil.dateTimeFormatter.PrintDateDeltaCompact (_body.rotationPeriod, true, true, true));
 			GUILayout.Label ("Tidally locked: " + (_body.tidallyLocked ? "Yes" : "No"));
 			if (_body.atmosphere) {
-				GUILayout.Label ("Atmosphere"/*, _centeredLabelStyle*/);
+				GUILayout.Label ("Atmosphere");
 				GUILayout.Label ("Oxygen:" + (_body.atmosphereContainsOxygen ? "Yes" : "No"));
 				GUILayout.Label ("Height:" + Format.GetNumberString (_body.atmosphereDepth) + "m");
 			}
@@ -223,7 +229,7 @@ namespace Kartographer
 			if (_body.orbit == null) return;
 			GUILayout.BeginVertical (GUILayout.Width (300));
 			if (_body.orbit.referenceBody != null) {
-				GUILayout.Label ("Reference Body: " + _body.orbit.referenceBody.RevealName ());
+				GUILayout.Label ("Reference Body: " + _body.orbit.referenceBody.displayName.Replace ("^N", ""));
 			}
 			GUILayout.Label ("Apoapsis: " + Format.GetNumberString (_body.orbit.ApA) + "m");
 			GUILayout.Label ("Periapsis: " + Format.GetNumberString (_body.orbit.PeA) + "m");
@@ -233,9 +239,10 @@ namespace Kartographer
 			GUILayout.Label ("Inclination: " + _body.orbit.inclination.ToString ("0.00##") + "°");
 			GUILayout.Label ("Longitude of AN: " + _body.orbit.LAN.ToString ("0.00##") + "°");
 			GUILayout.Label ("Argument of Periapsis: " + _body.orbit.argumentOfPeriapsis.ToString ("0.00##") + "°");
-			GUILayout.Label ("Time to Apoapsis: " + Format.GetTimeString (_body.orbit.timeToAp));
-			GUILayout.Label ("Time to Periapsis: " + Format.GetTimeString (_body.orbit.timeToPe));
-			GUILayout.Label ("Orbital Period: " + Format.GetTimeString (_body.orbit.period));
+			GUILayout.Label ("Time to Apoapsis: " + KSPUtil.dateTimeFormatter.PrintDateDeltaCompact (_body.orbit.timeToAp, true, true, true));
+			GUILayout.Label ("Time to Periapsis: " + KSPUtil.dateTimeFormatter.PrintDateDeltaCompact (_body.orbit.timeToPe, true, true, true));
+			GUILayout.Label ("Orbital Period: " + KSPUtil.dateTimeFormatter.PrintDateDeltaCompact (_body.orbit.period, true, true, true));
+			GUILayout.Label ("Orbital Speed: " + Format.GetNumberString (_body.orbit.vel.magnitude) + "m/s");
 			GUILayout.Label ("Eccentricity: " + _body.orbit.eccentricity.ToString ("g4"));
 			GUILayout.EndVertical ();
 		}
