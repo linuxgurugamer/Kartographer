@@ -1,4 +1,8 @@
-﻿### Version 1.1.1
+﻿1.1.2
+	Adoption by LinuxGuruGamer
+	Added Log class
+
+### Version 1.1.1
 - Fixed Vessel Select not clearing control lock on scene change
 - Some layout improvements in Celestial Body Data
 - Changed button layout in Maneuver Editor a little bit

@@ -159,7 +159,7 @@ internal class CustomAddonLoader : MonoBehaviour
 			var attr = ((KSPAddonImproved[])ourType.GetCustomAttributes(typeof(KSPAddonImproved), true)).SingleOrDefault();
 			if (attr != null)
 			{
-//				Debug.Log(string.Format("Found KSPAddonImproved in {0}", ourType.FullName));
+				Kartographer.Log.Info(string.Format("Found KSPAddonImproved in {0}", ourType.FullName));
 				addons.Add(new AddonInfo(ourType, attr));
 			}
 		}
@@ -180,7 +180,7 @@ internal class CustomAddonLoader : MonoBehaviour
 		if (scene == GameScenes.LOADINGBUFFER)
 			return;
 
-//		Debug.Log(string.Format("{1}: {0} was loaded; instantiating addons...", scene.ToString(), _identifier));
+        Kartographer.Log.Info(string.Format("{0} was loaded; instantiating addons...", scene.ToString()));
 
 		// Convert GameScenes => SceneMask
 		switch (scene)
@@ -242,7 +242,7 @@ internal class CustomAddonLoader : MonoBehaviour
 			// should this addon be initialized in current scene?
 			if ((addon.Scenes & mask) != 0)
 			{
-//				Debug.Log(string.Format("ImprovedAddonLoader: Creating addon '{0}'", addon.type.Name));
+                Kartographer.Log.Info(string.Format("ImprovedAddonLoader: Creating addon '{0}'", addon.type.Name));
 				GameObject go = new GameObject(addon.type.Name);
 				go.AddComponent(addon.type);
 
@@ -251,6 +251,6 @@ internal class CustomAddonLoader : MonoBehaviour
 			}
 		}
 
-//		Debug.Log(string.Format("{1} finished; created {0} addons", counter, _identifier));
-	}
+        Kartographer.Log.Info(string.Format(" finished; created {0} addons", counter));
+    }
 }
