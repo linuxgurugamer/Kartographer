@@ -1,6 +1,7 @@
 ﻿1.1.2
 	Adoption by LinuxGuruGamer
 	Added Log class
+	License changed to CC-BY-NC-SA
 
 ### Version 1.1.1
 - Fixed Vessel Select not clearing control lock on scene change
