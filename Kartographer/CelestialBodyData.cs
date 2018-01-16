@@ -160,7 +160,7 @@ namespace Kartographer
 					PlanetariumCamera.fetch.SetTarget (_body);
 				}
 			}
-			if (GUILayout.Button ("Target")) {
+			if (GUILayout.Button ("Set Target")) {
 				if (_body != null && FlightGlobals.ActiveVessel != null) {
 					FlightGlobals.fetch.SetVesselTarget (_body);
 				}

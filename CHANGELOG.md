@@ -2,6 +2,7 @@
 	Adoption by LinuxGuruGamer
 	Added Log class
 	License changed to CC-BY-NC-SA
+	Changed "Target" button to "Set Target" in CelestialbodyData.cs
 
 ### Version 1.1.1
 - Fixed Vessel Select not clearing control lock on scene change
