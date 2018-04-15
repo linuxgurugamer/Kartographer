@@ -1,4 +1,7 @@
-﻿1.1.2.1
+﻿1.1.2.2
+	Added dependency checks 
+
+1.1.2.1
 	Updated to 1.4.1
 	Added support for the ClickThroughBlocker
 	Added support for the ToolbarController
