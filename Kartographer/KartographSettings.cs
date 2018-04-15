@@ -6,6 +6,8 @@
 using UnityEngine;
 using KSP.IO;
 
+using ClickThroughFix;
+
 namespace Kartographer
 {
 	[KSPAddonImproved (KSPAddonImproved.Startup.Flight | KSPAddonImproved.Startup.TrackingStation, false)]
@@ -28,8 +30,7 @@ namespace Kartographer
 		internal bool DisableKraken { get { return _disableKraken; } }
 		bool _useKspSkin;
 		internal bool UseKspSkin { get { return _useKspSkin; } }
-		bool _useToolbar;
-		internal bool UseToolbar { get { return _useToolbar; } }
+
 
 		/// <summary>
 		/// Awake this instance.
@@ -53,7 +54,7 @@ namespace Kartographer
 			_autoHide = config.GetValue ("AutoHide", true);
 			_disableKraken = config.GetValue ("KrakenDisable", false);
 			_useKspSkin = config.GetValue ("UseKspSkin", true);
-			_useToolbar = config.GetValue ("UseToolbar", false);
+
 			_windowPos = config.GetValue ("SettingsWindowPos", new Rect (new Vector2 (Screen.width / 2, Screen.height / 2), Vector2.zero));
 
 			GameEvents.onHideUI.Add (Hide);
@@ -73,7 +74,7 @@ namespace Kartographer
 			config.SetValue ("AutoHide", _autoHide);
 			config.SetValue ("KrakenDisable", _disableKraken);
 			config.SetValue ("UseKspSkin", _useKspSkin);
-			config.SetValue ("UseToolbar", _useToolbar);
+
 			config.SetValue ("SettingsWindowPos", _windowPos);
 			config.save ();
 
@@ -101,7 +102,7 @@ namespace Kartographer
 		{
 			if (_active && !_hidden) {
 				if (_useKspSkin) GUI.skin = HighLogic.Skin;
-				_windowPos = GUILayout.Window (_winID, _windowPos, OnWindow, "Settings");
+				_windowPos = ClickThruBlocker.GUILayoutWindow (_winID, _windowPos, OnWindow, "Settings");
 				if (_windowPos.Contains (Event.current.mousePosition)) {
 					ControlLock ();
 				} else {
@@ -153,14 +154,8 @@ namespace Kartographer
 			_useKspSkin = GUILayout.Toggle (_useKspSkin, "Use KSP Skin");
 
 			GUILayout.BeginHorizontal ();
-			if (ToolbarManager.ToolbarAvailable) {
-				if (GUILayout.Button ("Switch toolbar to " + (_useToolbar ? "Stock" : "Blizzy's"))) {
-					_useToolbar = !_useToolbar;
-					AppLauncher.Instance.DestroyButtons ();
-					AppLauncher.Instance.OnAppLaunchReady ();
-				}
-			}
-			if (GUILayout.Button ("Close")) {
+
+            if (GUILayout.Button ("Close")) {
 				ToggleWindow ();
 			}
 			GUILayout.EndHorizontal ();

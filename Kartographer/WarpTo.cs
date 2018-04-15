@@ -6,6 +6,8 @@
 using UnityEngine;
 using KSP.IO;
 
+using ClickThroughFix;
+
 namespace Kartographer
 {
 
@@ -90,7 +92,7 @@ namespace Kartographer
 		{
 			if (_active && !_hidden) {
 				if (KartographSettings.Instance.UseKspSkin) GUI.skin = HighLogic.Skin;
-				_windowPos = GUILayout.Window (_winID, _windowPos, OnWindow, "Warp To");
+				_windowPos = ClickThruBlocker.GUILayoutWindow (_winID, _windowPos, OnWindow, "Warp To");
 				if (_windowPos.Contains (Event.current.mousePosition)) {
 					ControlLock ();
 				} else {

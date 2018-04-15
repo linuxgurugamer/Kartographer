@@ -7,6 +7,9 @@ using UnityEngine;
 using KSP.UI.Screens;
 using KSP.IO;
 
+using ClickThroughFix;
+using ToolbarControl_NS;
+
 namespace Kartographer
 {
 	public delegate void ButtonClickHandler ();
@@ -26,8 +29,9 @@ namespace Kartographer
 		Rect _windowPos;
 		int _winID;
 		float _autoHideTime;
-		ApplicationLauncherButton _toolbarButton;
-		IButton _altToolbarButton;
+        //ApplicationLauncherButton _toolbarButton;
+        //IButton _altToolbarButton;
+        ToolbarControl toolbarControl;
 
 		/// <summary>
 		/// Awake this instance.
@@ -96,7 +100,7 @@ namespace Kartographer
 		{
 			if (_active && !_hidden) {
 				if (KartographSettings.Instance.UseKspSkin) GUI.skin = HighLogic.Skin;
-				_windowPos = GUILayout.Window (_winID, _windowPos, OnWindow, "Kartograher");
+				_windowPos = ClickThruBlocker.GUILayoutWindow (_winID, _windowPos, OnWindow, "Kartograher");
 				if (_windowPos.Contains (Event.current.mousePosition)) {
 					ControlLock ();
 				} else {
@@ -104,49 +108,33 @@ namespace Kartographer
 				}
 			}
 		}
-
-		/// <summary>
-		/// Callback when the app launcher bar is ready.
-		/// </summary>
-		internal void OnAppLaunchReady ()
+        internal const string MODID = "Kartographer_NS";
+        internal const string MODNAME = "Kartographer";
+        /// <summary>
+        /// Callback when the app launcher bar is ready.
+        /// </summary>
+        internal void OnAppLaunchReady ()
 		{
-			if (ToolbarManager.ToolbarAvailable && KartographSettings.Instance.UseToolbar) {
-				_altToolbarButton = ToolbarManager.Instance.add ("Kartographer", "AppLaunch");
-				_altToolbarButton.TexturePath = "Kartographer/Textures/kartographer-icon-sm";
-				_altToolbarButton.ToolTip = "Kartographer";
-				_altToolbarButton.Visible = true;
-				_altToolbarButton.OnClick += (ClickEvent e) => {
-					ToggleWindow ();
-				};
-			} else {
-				_toolbarButton = ApplicationLauncher.Instance.AddModApplication (
-					ToggleWindow,
-					ToggleWindow,
-					noOp,
-					noOp,
-					noOp,
-					noOp,
-					ApplicationLauncher.AppScenes.FLIGHT | ApplicationLauncher.AppScenes.MAPVIEW |
-					ApplicationLauncher.AppScenes.TRACKSTATION,
-					GameDatabase.Instance.GetTexture ("Kartographer/Textures/kartographer-icon", false)
-				);
-			}
-		}
+            toolbarControl = gameObject.AddComponent<ToolbarControl>();
+            toolbarControl.AddToAllToolbars(ToggleWindow, ToggleWindow,
+                ApplicationLauncher.AppScenes.FLIGHT | ApplicationLauncher.AppScenes.MAPVIEW |
+                    ApplicationLauncher.AppScenes.TRACKSTATION,
+                MODID,
+                "kartographerButton",
+                "Kartographer/PluginData/Textures/kartographer-icon-38",
+                "Kartographer/PluginData/Textures/kartographer-icon-24",
+                MODNAME
+            );
+        }
 
 		/// <summary>
 		/// Destroy the buttons.
 		/// </summary>
 		internal void DestroyButtons ()
 		{
-			if (_toolbarButton != null) {
-				ApplicationLauncher.Instance.RemoveModApplication (_toolbarButton);
-				_toolbarButton = null;
-			}
-			if (_altToolbarButton != null) {
-				_altToolbarButton.Destroy ();
-				_altToolbarButton = null;
-			}
-		}
+            toolbarControl.OnDestroy();
+            Destroy(toolbarControl);
+        }
 
 		/// <summary>
 		/// No op.
@@ -188,10 +176,8 @@ namespace Kartographer
 		{
 			if (KartographSettings.Instance.AutoHide && _autoHideTime != 0.0f && Time.time > _autoHideTime &&
 				_active && !_windowPos.Contains (Event.current.mousePosition)) {
-				if (_toolbarButton != null)
-					_toolbarButton.SetFalse ();
-				else
-					ToggleWindow ();
+
+                toolbarControl.SetFalse(true);
 			}
 		}
 

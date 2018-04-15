@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using KSP.IO;
 
+using ClickThroughFix;
+
 namespace Kartographer
 {
 	internal class StoredManeuver
@@ -132,11 +134,11 @@ namespace Kartographer
 			if (_maneuverShow && !_hidden) {
 				if (KartographSettings.Instance.UseKspSkin) GUI.skin = HighLogic.Skin;
 				if (_maneuverShow && IsUsable ()) {
-					_windowPos = GUILayout.Window (_winID, _windowPos, OnWindow, "Maneuver Editor");
+					_windowPos = ClickThruBlocker.GUILayoutWindow (_winID, _windowPos, OnWindow, "Maneuver Editor");
 					if (_stored.Count > 0) {
 						_savedPos.x = _windowPos.x + _windowPos.width + 10.0f;
 						_savedPos.y = _windowPos.y;
-						_savedPos = GUILayout.Window (_savedWinID, _savedPos, SavedWindow, "Saved Maneuvers");
+						_savedPos = ClickThruBlocker.GUILayoutWindow (_savedWinID, _savedPos, SavedWindow, "Saved Maneuvers");
 					}
 				}
 				if (_windowPos.Contains (Event.current.mousePosition) | _savedPos.Contains (Event.current.mousePosition)) {

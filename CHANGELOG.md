@@ -1,4 +1,11 @@
-﻿1.1.2
+﻿1.1.2.1
+	Updated to 1.4.1
+	Added support for the ClickThroughBlocker
+	Added support for the ToolbarController
+	Removed blizzy toolbar option from the settings page
+
+
+1.1.2
 	Adoption by LinuxGuruGamer
 	Added Log class
 	License changed to CC-BY-NC-SA

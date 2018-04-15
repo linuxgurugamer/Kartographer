@@ -233,3 +233,4 @@ $RECYCLE.BIN/
 *.dll
 *.pdb
 *.ide
+.vs
