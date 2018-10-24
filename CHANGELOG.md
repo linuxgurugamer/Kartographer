@@ -1,4 +1,7 @@
-﻿1.1.2.2
+﻿1.1.2.3
+	Version bump for 1.5 rebuild
+
+1.1.2.2
 	Added dependency checks 
 
 1.1.2.1
