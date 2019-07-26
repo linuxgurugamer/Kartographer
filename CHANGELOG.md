@@ -1,4 +1,8 @@
-﻿1.1.2.3
+﻿1.1.3
+	Added InstallChecker.cs
+	Updated AssemblyVersion.tt
+
+1.1.2.3
 	Version bump for 1.5 rebuild
 
 1.1.2.2
