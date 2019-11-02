@@ -1,4 +1,9 @@
-﻿1.1.3
+﻿ChangeLog
+
+1.2.0
+	Updated for KSP 1.8
+
+1.1.3
 	Added InstallChecker.cs
 	Updated AssemblyVersion.tt
 
